@@ -1,7 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-
+﻿using UnityEngine;
 using BT;
 
 public class BossAIController : MonoBehaviour
@@ -17,6 +14,13 @@ public class BossAIController : MonoBehaviour
 
     private void Update()
     {
+        if (blackboard == null || _root == null)
+        {
+            return;
+        }
+
+        blackboard.SetPatternExecutionMode(PatternExecutionMode.Normal);
         _root.Tick(blackboard, Time.deltaTime);
     }
 }
+

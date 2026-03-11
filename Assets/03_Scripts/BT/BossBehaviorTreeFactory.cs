@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 namespace BT
@@ -80,9 +80,14 @@ namespace BT
 
         private static BTNode<BossBlackboard> WeightedSkill(string nodeName, int skillIndex, int skillCount, BTNode<BossBlackboard> pattern)
         {
+            var shouldUseTwoPhase = true;
+            var runtimePattern = shouldUseTwoPhase
+                ? new TwoPhasePatternNode($"{nodeName}_TwoPhase", pattern)
+                : pattern;
+
             return new SequenceNode<BossBlackboard>($"{nodeName}_Weighted")
                 .AddChild(SkillChanceCondition($"{nodeName}_Chance", skillIndex, skillCount))
-                .AddChild(pattern)
+                .AddChild(runtimePattern)
                 .AddChild(CommitSkillSelection($"{nodeName}_CommitWeight", skillIndex, skillCount));
         }
 
@@ -152,9 +157,7 @@ namespace BT
                             .AddChild(CreateSkillNode("Lazer_Row_1", "Row_1", warning: 0.8f, attack: 0.45f))
                             .AddChild(new SequenceNode<BossBlackboard>("P1_Skill_5_4_Sequence")
                                 .AddChild(new WaitNode<BossBlackboard>("P1_Skill_5_5_Wait", 0.3f))
-                                .AddChild(new ParallelAllNode<BossBlackboard>("P1_Skill_5_5_ParallelNode")
-                                    .AddChild(CreateSkillNode("Pick_0", "Pick_0", warning: 0.9f, attack: 0.95f))
-                                    .AddChild(CreateSkillNode("Pick_10", "Pick_10", warning: 0.9f, attack: 0.95f)))))));
+                                .AddChild(new ParallelAllNode<BossBlackboard>("P1_Skill_5_5_ParallelNode"))))));
 
             var phase1Skills = new SelectorNode<BossBlackboard>("Phase_1_Skills")
                 .AddChild(WeightedSkill("P1_Skill_1", 1, 5, p1Skill1))
@@ -267,3 +270,5 @@ namespace BT
         }
     }
 }
+
+

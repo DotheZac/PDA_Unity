@@ -1,10 +1,16 @@
-using System;
-using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace BT
 {
+    public enum PatternExecutionMode
+    {
+        Normal,
+        WarningOnly,
+        AttackOnly
+    }
+
     public class BossBlackboard : MonoBehaviour
     {
         [Header("Telegraph")]
@@ -30,10 +36,13 @@ namespace BT
         private readonly float[] _skillChances = new float[5];
         private float _randomValue;
         private float _pendingDamage;
+        private PatternExecutionMode _executionMode = PatternExecutionMode.Normal;
 
         public TelegraphTile[] Telegraphs => telegraphs;
         public float BossCurrentHp { get => bossCurrentHp; set => bossCurrentHp = value; }
         public bool CanBeHit => canBeHit;
+        public PatternExecutionMode ExecutionMode => _executionMode;
+
         public int CurrentPhase
         {
             get
@@ -57,9 +66,73 @@ namespace BT
             }
         }
 
+        public void SetPatternExecutionMode(PatternExecutionMode mode)
+        {
+            _executionMode = mode;
+        }
+
         public bool TryGetRange(string key, out int[] indices)
         {
             return _rangeMap.TryGetValue(key, out indices);
+        }
+
+        public void ClearAllWarnings()
+        {
+            if (telegraphs == null)
+            {
+                return;
+            }
+
+            foreach (var tile in telegraphs)
+            {
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                tile.SetWarningVisible(false);
+            }
+        }
+
+        public void ClearAllDamage()
+        {
+            if (telegraphs == null)
+            {
+                return;
+            }
+
+            foreach (var tile in telegraphs)
+            {
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                tile.SetDamageActive(false);
+            }
+        }
+
+        public bool HasAnyActiveTelegraphState()
+        {
+            if (telegraphs == null)
+            {
+                return false;
+            }
+
+            foreach (var tile in telegraphs)
+            {
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                if (tile.IsWarningVisible || tile.IsDamageActive)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void QueueDamage(float damage)
@@ -161,6 +234,7 @@ namespace BT
                 {
                     _skillWeights[i] = 1f;
                 }
+
                 sum = skillCount;
             }
 

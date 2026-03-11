@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace BT
@@ -10,8 +9,8 @@ namespace BT
         private bool _started;
         private bool _attacked;
         private float _elapsed;
+        private bool _preserveWarningOnReset;
         protected bool FailRequested { get; private set; }
-
 
         protected SkillNode(string name, float warningDuration) : base(name)
         {
@@ -20,10 +19,42 @@ namespace BT
 
         public override NodeState Tick(BossBlackboard blackboard, float deltaTime)
         {
+            return blackboard.ExecutionMode switch
+            {
+                PatternExecutionMode.WarningOnly => TickWarningOnly(blackboard, deltaTime),
+                PatternExecutionMode.AttackOnly => TickAttackOnly(blackboard, deltaTime),
+                _ => TickNormal(blackboard, deltaTime)
+            };
+        }
+
+        public override void Reset()
+        {
+            var preserveWarnings = _preserveWarningOnReset;
+            _started = false;
+            _attacked = false;
+            _elapsed = 0f;
+            _preserveWarningOnReset = false;
+            FailRequested = false;
+            OnReset(preserveWarnings);
+        }
+
+        protected void RequestFailure() => FailRequested = true;
+
+        protected abstract bool InitializeSkill(BossBlackboard blackboard, bool showWarning);
+        protected abstract void EndWarningAndAttack(BossBlackboard blackboard);
+        protected virtual bool IsAttackFinished(BossBlackboard blackboard, float deltaTime) => true;
+        protected virtual void OnReset(bool preserveWarnings) { }
+
+        private NodeState TickNormal(BossBlackboard blackboard, float deltaTime)
+        {
             if (!_started)
             {
+                if (!InitializeSkill(blackboard, showWarning: true))
+                {
+                    RequestFailure();
+                }
+
                 Debug.Log($"[SkillNode] Skill triggered: {Name}", blackboard);
-                StartWarning(blackboard);
                 _started = true;
 
                 if (FailRequested)
@@ -66,21 +97,67 @@ namespace BT
             return NodeState.Success;
         }
 
-        public override void Reset()
+        private NodeState TickWarningOnly(BossBlackboard blackboard, float deltaTime)
         {
-            _started = false;
-            _attacked = false;
-            _elapsed = 0f;
-            FailRequested = false;
-            OnReset();
+            if (!_started)
+            {
+                if (!InitializeSkill(blackboard, showWarning: true))
+                {
+                    RequestFailure();
+                }
+
+                _started = true;
+            }
+
+            if (FailRequested)
+            {
+                Reset();
+                return NodeState.Failure;
+            }
+
+            _elapsed += deltaTime;
+            if (_elapsed < _warningDuration)
+            {
+                return NodeState.Running;
+            }
+
+            // Warning-only phase should keep already visible warnings even if parent composite resets this node.
+            _preserveWarningOnReset = true;
+            return NodeState.Success;
         }
 
-        protected void RequestFailure() => FailRequested = true;
+        private NodeState TickAttackOnly(BossBlackboard blackboard, float deltaTime)
+        {
+            if (!_started)
+            {
+                if (!InitializeSkill(blackboard, showWarning: false))
+                {
+                    RequestFailure();
+                }
 
-        protected abstract void StartWarning(BossBlackboard blackboard);
-        protected abstract void EndWarningAndAttack(BossBlackboard blackboard);
-        protected virtual bool IsAttackFinished(BossBlackboard blackboard, float deltaTime) => true;
-        protected virtual void OnReset() { }
+                _started = true;
+            }
+
+            if (FailRequested)
+            {
+                Reset();
+                return NodeState.Failure;
+            }
+
+            if (!_attacked)
+            {
+                EndWarningAndAttack(blackboard);
+                _attacked = true;
+            }
+
+            if (!IsAttackFinished(blackboard, deltaTime))
+            {
+                return NodeState.Running;
+            }
+
+            Reset();
+            return NodeState.Success;
+        }
     }
 
     public sealed class ArmSmashSkillNode : TimedRangeSkillNode
@@ -120,12 +197,9 @@ namespace BT
             _damageEnd = damageEnd;
         }
 
-        protected override void StartWarning(BossBlackboard blackboard)
+        protected override bool InitializeSkill(BossBlackboard blackboard, bool showWarning)
         {
-            if (!SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles))
-            {
-                RequestFailure();
-            }
+            return SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles, showWarning);
         }
 
         protected override void EndWarningAndAttack(BossBlackboard blackboard)
@@ -148,16 +222,20 @@ namespace BT
 
             if (_damageEnabled && _attackElapsed >= _damageEnd)
             {
-                SkillNodeUtils.SetDamage(_activeTiles, true, Name);
+                SkillNodeUtils.SetDamage(_activeTiles, false, Name);
                 _damageEnabled = false;
             }
 
             return _attackElapsed >= _attackDuration;
         }
 
-        protected override void OnReset()
+        protected override void OnReset(bool preserveWarnings)
         {
-            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            if (!preserveWarnings)
+            {
+                SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            }
+
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
             _activeTiles.Clear();
             _attackElapsed = 0f;
@@ -187,19 +265,17 @@ namespace BT
             _stepInterval = stepInterval;
         }
 
-        protected override void StartWarning(BossBlackboard blackboard)
+        protected override bool InitializeSkill(BossBlackboard blackboard, bool showWarning)
         {
-            if (!SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles))
+            if (!SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles, showWarning))
             {
-                RequestFailure();
-                return;
+                return false;
             }
 
             _activeIndices.Clear();
             if (!blackboard.TryGetRange(_rangeKey, out var indices) || indices == null)
             {
-                RequestFailure();
-                return;
+                return false;
             }
 
             foreach (var index in indices)
@@ -212,8 +288,7 @@ namespace BT
 
             if (_activeIndices.Count == 0)
             {
-                RequestFailure();
-                return;
+                return false;
             }
 
             _minIndex = int.MaxValue;
@@ -225,6 +300,7 @@ namespace BT
             }
 
             _centerIndex = (_minIndex + _maxIndex) / 2;
+            return true;
         }
 
         protected override void EndWarningAndAttack(BossBlackboard blackboard)
@@ -281,9 +357,13 @@ namespace BT
             return left < _minIndex && right > _maxIndex;
         }
 
-        protected override void OnReset()
+        protected override void OnReset(bool preserveWarnings)
         {
-            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            if (!preserveWarnings)
+            {
+                SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            }
+
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
             _activeTiles.Clear();
             _activeIndices.Clear();
@@ -308,12 +388,9 @@ namespace BT
             _attackDuration = attackDuration;
         }
 
-        protected override void StartWarning(BossBlackboard blackboard)
+        protected override bool InitializeSkill(BossBlackboard blackboard, bool showWarning)
         {
-            if (!SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles))
-            {
-                RequestFailure();
-            }
+            return SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles, showWarning);
         }
 
         protected override void EndWarningAndAttack(BossBlackboard blackboard)
@@ -329,9 +406,13 @@ namespace BT
             return _attackElapsed >= _attackDuration;
         }
 
-        protected override void OnReset()
+        protected override void OnReset(bool preserveWarnings)
         {
-            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            if (!preserveWarnings)
+            {
+                SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            }
+
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
             _activeTiles.Clear();
             _attackElapsed = 0f;
@@ -340,7 +421,7 @@ namespace BT
 
     internal static class SkillNodeUtils
     {
-        internal static bool PopulateTiles(BossBlackboard blackboard, string skillName, string rangeKey, List<TelegraphTile> buffer)
+        internal static bool PopulateTiles(BossBlackboard blackboard, string skillName, string rangeKey, List<TelegraphTile> buffer, bool showWarning)
         {
             buffer.Clear();
 
@@ -357,12 +438,12 @@ namespace BT
                 }
 
                 var tile = blackboard.Telegraphs[index];
-                tile.SetWarningVisible(true);
+                tile.SetWarningVisible(showWarning);
                 tile.SetDamageActive(false);
                 buffer.Add(tile);
             }
 
-            if (buffer.Count > 0)
+            if (showWarning && buffer.Count > 0)
             {
                 var tileNames = string.Join(", ", buffer.ConvertAll(DescribeTile));
                 Debug.Log($"[SkillNode] {skillName} warning tiles (range: {rangeKey}): {tileNames}", blackboard);
@@ -406,3 +487,5 @@ namespace BT
         }
     }
 }
+
+
