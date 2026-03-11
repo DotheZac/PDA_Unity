@@ -1,0 +1,66 @@
+# Unity generated folders
+
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+UserSettings/
+
+# MemoryCaptures
+
+MemoryCaptures/
+
+# Asset meta data
+
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Unity3D generated meta files
+
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+
+# Unity3D auto generated solution files
+
+*.sln
+*.csproj
+*.unityproj
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+
+# Visual Studio cache
+
+.vs/
+
+# Rider
+
+.idea/
+*.sln.iml
+
+# Crash reports
+
+sysinfo.txt
+
+# Builds
+
+*.apk
+*.aab
+*.unitypackage
+
+# Addressables
+
+ServerData/
+
+Assets/04_Resources/
