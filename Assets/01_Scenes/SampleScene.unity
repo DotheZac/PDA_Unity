@@ -2454,8 +2454,36 @@ MonoBehaviour:
   - {fileID: 380785952}
   - {fileID: 567619328}
   ranges:
-  - Key: 
-    Indices: 
+  - Key: Row_1
+    Indices: 0000000001000000020000000300000004000000
+  - Key: Row_2
+    Indices: 0500000006000000070000000800000009000000
+  - Key: Row_3
+    Indices: 0a0000000b0000000c0000000d0000000e000000
+  - Key: Swip_L
+    Indices: 0000000001000000020000000500000006000000070000000a0000000b0000000c000000
+  - Key: Swip_R
+    Indices: 0200000003000000040000000700000008000000090000000c0000000d0000000e000000
+  - Key: Pick_0
+    Indices: 00000000
+  - Key: Pick_1
+    Indices: 01000000
+  - Key: Pick_3
+    Indices: 03000000
+  - Key: Pick_4
+    Indices: 04000000
+  - Key: Pick_5
+    Indices: 05000000
+  - Key: Pick_6
+    Indices: 06000000
+  - Key: Pick_7
+    Indices: 07000000
+  - Key: Pick_8
+    Indices: 08000000
+  - Key: Pick_10
+    Indices: 0a000000
+  - Key: Pick_14
+    Indices: 0e000000
 --- !u!4 &1150668634
 Transform:
   m_ObjectHideFlags: 0
