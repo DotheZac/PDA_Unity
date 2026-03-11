@@ -22,6 +22,7 @@ namespace BT
         {
             if (!_started)
             {
+                Debug.Log($"[SkillNode] Skill triggered: {Name}", blackboard);
                 StartWarning(blackboard);
                 _started = true;
 
@@ -121,7 +122,7 @@ namespace BT
 
         protected override void StartWarning(BossBlackboard blackboard)
         {
-            if (!SkillNodeUtils.PopulateTiles(blackboard, _rangeKey, _activeTiles))
+            if (!SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles))
             {
                 RequestFailure();
             }
@@ -129,8 +130,8 @@ namespace BT
 
         protected override void EndWarningAndAttack(BossBlackboard blackboard)
         {
-            SkillNodeUtils.SetWarning(_activeTiles, false);
-            SkillNodeUtils.SetDamage(_activeTiles, false);
+            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            SkillNodeUtils.SetDamage(_activeTiles, false, Name);
             _attackElapsed = 0f;
             _damageEnabled = false;
         }
@@ -141,13 +142,13 @@ namespace BT
 
             if (!_damageEnabled && _attackElapsed >= _damageStart)
             {
-                SkillNodeUtils.SetDamage(_activeTiles, true);
+                SkillNodeUtils.SetDamage(_activeTiles, true, Name);
                 _damageEnabled = true;
             }
 
             if (_damageEnabled && _attackElapsed >= _damageEnd)
             {
-                SkillNodeUtils.SetDamage(_activeTiles, false);
+                SkillNodeUtils.SetDamage(_activeTiles, true, Name);
                 _damageEnabled = false;
             }
 
@@ -156,8 +157,8 @@ namespace BT
 
         protected override void OnReset()
         {
-            SkillNodeUtils.SetWarning(_activeTiles, false);
-            SkillNodeUtils.SetDamage(_activeTiles, false);
+            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            SkillNodeUtils.SetDamage(_activeTiles, false, Name);
             _activeTiles.Clear();
             _attackElapsed = 0f;
             _damageEnabled = false;
@@ -188,7 +189,7 @@ namespace BT
 
         protected override void StartWarning(BossBlackboard blackboard)
         {
-            if (!SkillNodeUtils.PopulateTiles(blackboard, _rangeKey, _activeTiles))
+            if (!SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles))
             {
                 RequestFailure();
                 return;
@@ -228,8 +229,8 @@ namespace BT
 
         protected override void EndWarningAndAttack(BossBlackboard blackboard)
         {
-            SkillNodeUtils.SetWarning(_activeTiles, false);
-            SkillNodeUtils.SetDamage(_activeTiles, false);
+            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            SkillNodeUtils.SetDamage(_activeTiles, false, Name);
             _step = 0;
             _prevLeft = -1;
             _prevRight = -1;
@@ -251,11 +252,16 @@ namespace BT
             if (left >= _minIndex)
             {
                 blackboard.Telegraphs[left].SetDamageActive(true);
+                Debug.Log($"[SkillNode] {Name} activated damage tile: {SkillNodeUtils.DescribeTile(blackboard.Telegraphs[left])}", blackboard);
             }
 
             if (right <= _maxIndex)
             {
                 blackboard.Telegraphs[right].SetDamageActive(true);
+                if (right != left)
+                {
+                    Debug.Log($"[SkillNode] {Name} activated damage tile: {SkillNodeUtils.DescribeTile(blackboard.Telegraphs[right])}", blackboard);
+                }
             }
 
             if (_prevLeft >= _minIndex && _prevLeft <= _maxIndex)
@@ -277,8 +283,8 @@ namespace BT
 
         protected override void OnReset()
         {
-            SkillNodeUtils.SetWarning(_activeTiles, false);
-            SkillNodeUtils.SetDamage(_activeTiles, false);
+            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            SkillNodeUtils.SetDamage(_activeTiles, false, Name);
             _activeTiles.Clear();
             _activeIndices.Clear();
             _step = 0;
@@ -304,7 +310,7 @@ namespace BT
 
         protected override void StartWarning(BossBlackboard blackboard)
         {
-            if (!SkillNodeUtils.PopulateTiles(blackboard, _rangeKey, _activeTiles))
+            if (!SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles))
             {
                 RequestFailure();
             }
@@ -312,8 +318,8 @@ namespace BT
 
         protected override void EndWarningAndAttack(BossBlackboard blackboard)
         {
-            SkillNodeUtils.SetWarning(_activeTiles, false);
-            SkillNodeUtils.SetDamage(_activeTiles, true);
+            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            SkillNodeUtils.SetDamage(_activeTiles, true, Name);
             _attackElapsed = 0f;
         }
 
@@ -325,8 +331,8 @@ namespace BT
 
         protected override void OnReset()
         {
-            SkillNodeUtils.SetWarning(_activeTiles, false);
-            SkillNodeUtils.SetDamage(_activeTiles, false);
+            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            SkillNodeUtils.SetDamage(_activeTiles, false, Name);
             _activeTiles.Clear();
             _attackElapsed = 0f;
         }
@@ -334,7 +340,7 @@ namespace BT
 
     internal static class SkillNodeUtils
     {
-        internal static bool PopulateTiles(BossBlackboard blackboard, string rangeKey, List<TelegraphTile> buffer)
+        internal static bool PopulateTiles(BossBlackboard blackboard, string skillName, string rangeKey, List<TelegraphTile> buffer)
         {
             buffer.Clear();
 
@@ -356,10 +362,16 @@ namespace BT
                 buffer.Add(tile);
             }
 
+            if (buffer.Count > 0)
+            {
+                var tileNames = string.Join(", ", buffer.ConvertAll(DescribeTile));
+                Debug.Log($"[SkillNode] {skillName} warning tiles (range: {rangeKey}): {tileNames}", blackboard);
+            }
+
             return buffer.Count > 0;
         }
 
-        internal static void SetWarning(List<TelegraphTile> tiles, bool visible)
+        internal static void SetWarning(List<TelegraphTile> tiles, bool visible, string skillName)
         {
             foreach (var tile in tiles)
             {
@@ -367,12 +379,30 @@ namespace BT
             }
         }
 
-        internal static void SetDamage(List<TelegraphTile> tiles, bool active)
+        internal static void SetDamage(List<TelegraphTile> tiles, bool active, string skillName)
         {
             foreach (var tile in tiles)
             {
                 tile.SetDamageActive(active);
             }
+
+            if (!active || tiles.Count == 0)
+            {
+                return;
+            }
+
+            var tileNames = string.Join(", ", tiles.ConvertAll(DescribeTile));
+            Debug.Log($"[SkillNode] {skillName} activated damage tiles: {tileNames}");
+        }
+
+        internal static string DescribeTile(TelegraphTile tile)
+        {
+            if (tile == null)
+            {
+                return "<null>";
+            }
+
+            return $"{tile.name}#{tile.GetInstanceID()}";
         }
     }
 }

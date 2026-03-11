@@ -33,6 +33,18 @@ namespace BT
         private static BTNode<BossBlackboard> CreateSkillNode(string name, string key, float warning = 1.2f, float attack = 0.35f)
                     => new ArmSmashSkillNode(name, key, warningDuration: warning, attackDuration: attack);
 
+        private static BTNode<BossBlackboard> WithPatternDelay(string patternName, BTNode<BossBlackboard> patternNode, float delaySeconds = 1.0f)
+        {
+            return new SequenceNode<BossBlackboard>($"{patternName}_WithDelay")
+                            .AddChild(new ActionNode<BossBlackboard>($"{patternName}_StartLog", bb =>
+                            {
+                                Debug.Log($"[BossPattern] Start: {patternName}", bb);
+                                return NodeState.Success;
+                            }))
+                            .AddChild(patternNode)
+                            .AddChild(new WaitNode<BossBlackboard>($"{patternName}_PatternDelay", delaySeconds));
+        }
+
         public static BTNode<BossBlackboard> CreateTestTree()
         {
             var p1Skill1 = new SequenceNode<BossBlackboard>("P1_Skill_1")
@@ -104,11 +116,11 @@ namespace BT
                                     .AddChild(CreateSkillNode("Pick_10", "Pick_10", warning: 0.9f)))))));
 
             var phase1Skills = new SelectorNode<BossBlackboard>("Phase_1_Skills")
-                .AddChild(p1Skill1)
-                .AddChild(p1Skill2)
-                .AddChild(p1Skill3)
-                .AddChild(p1Skill4)
-                .AddChild(p1Skill5);
+                .AddChild(WithPatternDelay("P1_Skill_1", p1Skill1))
+                .AddChild(WithPatternDelay("P1_Skill_2", p1Skill2))
+                .AddChild(WithPatternDelay("P1_Skill_3", p1Skill3))
+                .AddChild(WithPatternDelay("P1_Skill_4", p1Skill4))
+                .AddChild(WithPatternDelay("P1_Skill_5", p1Skill5));
 
             var phase2Skills = new SelectorNode<BossBlackboard>("Phase_2_Skills")
                 .AddChild(new SequenceNode<BossBlackboard>("P2_Skill_1")

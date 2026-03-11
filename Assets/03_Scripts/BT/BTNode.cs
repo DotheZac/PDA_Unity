@@ -64,6 +64,21 @@ namespace BT
         }
     }
 
+    public sealed class ActionNode<TBlackboard> : BTNode<TBlackboard>
+    {
+        private readonly Func<TBlackboard, NodeState> _action;
+
+        public ActionNode(string name, Func<TBlackboard, NodeState> action) : base(name)
+        {
+            _action = action;
+        }
+
+        public override NodeState Tick(TBlackboard blackboard, float deltaTime)
+        {
+            return _action(blackboard);
+        }
+    }
+
     public sealed class ParallelAllNode<TBlackboard> : CompositeNode<TBlackboard>
     {
         private readonly List<NodeState> _childStates = new();

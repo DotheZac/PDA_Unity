@@ -13,6 +13,14 @@ namespace BT
         private void Awake()
         {
             AutoBindComponents();
+            SetWarningVisible(false);
+            SetDamageActive(false);
+        }
+
+        private void OnEnable()
+        {
+            SetWarningVisible(false);
+            SetDamageActive(false);
         }
 
         private void Reset()
