@@ -107,6 +107,7 @@ namespace BT
         protected override void EndWarningAndAttack(BossBlackboard blackboard)
         {
             _attackElapsed = 0f;
+            Debug.Log("팔 후려치기");
             foreach (var tile in _activeTiles)
             {
                 tile.SetWarningVisible(false);
