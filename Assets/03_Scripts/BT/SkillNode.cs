@@ -10,6 +10,8 @@ namespace BT
         private bool _started;
         private bool _attacked;
         private float _elapsed;
+        protected bool FailRequested { get; private set; }
+
 
         protected SkillNode(string name, float warningDuration) : base(name)
         {
@@ -22,6 +24,18 @@ namespace BT
             {
                 StartWarning(blackboard);
                 _started = true;
+
+                if (FailRequested)
+                {
+                    Reset();
+                    return NodeState.Failure;
+                }
+            }
+
+            if (FailRequested)
+            {
+                Reset();
+                return NodeState.Failure;
             }
 
             _elapsed += deltaTime;
@@ -34,6 +48,12 @@ namespace BT
             {
                 EndWarningAndAttack(blackboard);
                 _attacked = true;
+
+                if (FailRequested)
+                {
+                    Reset();
+                    return NodeState.Failure;
+                }
             }
 
             if (!IsAttackFinished(blackboard, deltaTime))
@@ -50,7 +70,13 @@ namespace BT
             _started = false;
             _attacked = false;
             _elapsed = 0f;
+            FailRequested = false;
             OnReset();
+        }
+
+        protected void RequestFailure()
+        {
+            FailRequested = true;
         }
 
         protected abstract void StartWarning(BossBlackboard blackboard);
@@ -78,10 +104,12 @@ namespace BT
         protected override void StartWarning(BossBlackboard blackboard)
         {
             _activeTiles.Clear();
+            Debug.Log($"[ArmSmashSkillNode:{Name}] ArmSmash 시도. rangeKey={_rangeKey}");
 
             if (!blackboard.TryGetRange(_rangeKey, out var indices))
             {
-                UnityEngine.Debug.LogWarning($"[ArmSmashSkillNode:{Name}] Range key not found: {_rangeKey}");
+                Debug.LogWarning($"[ArmSmashSkillNode:{Name}] ArmSmash 실패. Range key not found: {_rangeKey}");
+                RequestFailure();
                 return;
             }
 
@@ -100,14 +128,15 @@ namespace BT
 
             if (_activeTiles.Count == 0)
             {
-                UnityEngine.Debug.LogWarning($"[ArmSmashSkillNode:{Name}] No valid telegraph tile index in range '{_rangeKey}'.");
+                Debug.LogWarning($"[ArmSmashSkillNode:{Name}] ArmSmash 실패. No valid telegraph tile index in range '{_rangeKey}'.");
+                RequestFailure();
             }
         }
 
         protected override void EndWarningAndAttack(BossBlackboard blackboard)
         {
             _attackElapsed = 0f;
-            Debug.Log("팔 후려치기");
+            Debug.Log("팔 휘두르기");
             foreach (var tile in _activeTiles)
             {
                 tile.SetWarningVisible(false);
@@ -118,7 +147,13 @@ namespace BT
         protected override bool IsAttackFinished(BossBlackboard blackboard, float deltaTime)
         {
             _attackElapsed += deltaTime;
-            return _attackElapsed >= _attackDuration;
+            if (_attackElapsed < _attackDuration)
+            {
+                return false;
+            }
+
+            Debug.Log($"[ArmSmashSkillNode:{Name}] ArmSmash 성공.");
+            return true;
         }
 
         protected override void OnReset()
