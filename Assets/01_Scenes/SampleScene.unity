@@ -238,6 +238,8 @@ MonoBehaviour:
   damageCollider: {fileID: 86908106}
   warningRenderer: {fileID: 86908103}
   warningEffect: {fileID: 86908104}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &86908106
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -399,6 +401,8 @@ MonoBehaviour:
   damageCollider: {fileID: 326899449}
   warningRenderer: {fileID: 326899446}
   warningEffect: {fileID: 326899447}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &326899449
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -560,6 +564,8 @@ MonoBehaviour:
   damageCollider: {fileID: 345625694}
   warningRenderer: {fileID: 345625691}
   warningEffect: {fileID: 345625692}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &345625694
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -721,6 +727,8 @@ MonoBehaviour:
   damageCollider: {fileID: 379902612}
   warningRenderer: {fileID: 379902609}
   warningEffect: {fileID: 379902610}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &379902612
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -882,6 +890,8 @@ MonoBehaviour:
   damageCollider: {fileID: 380785953}
   warningRenderer: {fileID: 380785950}
   warningEffect: {fileID: 380785951}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &380785953
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1043,6 +1053,8 @@ MonoBehaviour:
   damageCollider: {fileID: 400731046}
   warningRenderer: {fileID: 400731043}
   warningEffect: {fileID: 400731044}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &400731046
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1204,6 +1216,8 @@ MonoBehaviour:
   damageCollider: {fileID: 458651822}
   warningRenderer: {fileID: 458651819}
   warningEffect: {fileID: 458651820}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &458651822
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1537,6 +1551,8 @@ MonoBehaviour:
   damageCollider: {fileID: 567619329}
   warningRenderer: {fileID: 567619326}
   warningEffect: {fileID: 567619327}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &567619329
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -1698,6 +1714,8 @@ MonoBehaviour:
   damageCollider: {fileID: 582506169}
   warningRenderer: {fileID: 582506166}
   warningEffect: {fileID: 582506167}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &582506169
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2040,6 +2058,8 @@ MonoBehaviour:
   damageCollider: {fileID: 625750434}
   warningRenderer: {fileID: 625750431}
   warningEffect: {fileID: 625750432}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &625750434
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2201,6 +2221,8 @@ MonoBehaviour:
   damageCollider: {fileID: 760028123}
   warningRenderer: {fileID: 760028120}
   warningEffect: {fileID: 760028121}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &760028123
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2362,6 +2384,8 @@ MonoBehaviour:
   damageCollider: {fileID: 791065220}
   warningRenderer: {fileID: 791065217}
   warningEffect: {fileID: 791065218}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &791065220
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -2484,6 +2508,14 @@ MonoBehaviour:
     Indices: 0a000000
   - Key: Pick_14
     Indices: 0e000000
+  bossCurrentHp: 100
+  currentPhase: 1
+  phase3Triggered: 0
+  phase2Threshold: 50
+  phase3Threshold: 45
+  idleCooldown: 1
+  elapsedIdleTime: 0
+  canBeHit: 1
 --- !u!4 &1150668634
 Transform:
   m_ObjectHideFlags: 0
@@ -2628,6 +2660,8 @@ MonoBehaviour:
   damageCollider: {fileID: 1180276545}
   warningRenderer: {fileID: 1180276542}
   warningEffect: {fileID: 1180276543}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &1180276545
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3301,6 +3335,8 @@ MonoBehaviour:
   damageCollider: {fileID: 1738648461}
   warningRenderer: {fileID: 1738648458}
   warningEffect: {fileID: 1738648459}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &1738648461
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -3541,6 +3577,8 @@ MonoBehaviour:
   damageCollider: {fileID: 1997495815}
   warningRenderer: {fileID: 1997495812}
   warningEffect: {fileID: 1997495813}
+  warningColor: {r: 1, g: 1, b: 1, a: 1}
+  damageActiveColor: {r: 0, g: 0, b: 1, a: 1}
 --- !u!61 &1997495815
 BoxCollider2D:
   m_ObjectHideFlags: 0

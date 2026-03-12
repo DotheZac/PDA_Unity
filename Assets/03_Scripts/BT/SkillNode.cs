@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BT
@@ -160,10 +160,135 @@ namespace BT
         }
     }
 
-    public sealed class ArmSmashSkillNode : TimedRangeSkillNode
+    public sealed class ArmSmashSkillNode : SkillNode
     {
-        public ArmSmashSkillNode(string name, string rangeKey, float warningDuration = 1.5f, float attackDuration = 0.35f)
-            : base(name, rangeKey, warningDuration, attackDuration) { }
+        private readonly string _rangeKey;
+        private readonly float _moveDuration;
+        private readonly List<TelegraphTile> _activeTiles = new();
+
+        private TelegraphTile _movingTile;
+        private Vector3 _moveStartPosition;
+        private Vector3 _moveTargetPosition;
+        private float _moveElapsed;
+        private bool _isMoving;
+
+        public ArmSmashSkillNode(string name, string rangeKey, float warningDuration = 1.5f, float attackDuration = 0.7f)
+            : base(name, warningDuration)
+        {
+            _rangeKey = rangeKey;
+            _moveDuration = attackDuration;
+        }
+
+        protected override bool InitializeSkill(BossBlackboard blackboard, bool showWarning)
+        {
+            _activeTiles.Clear();
+            _movingTile = null;
+            _moveElapsed = 0f;
+            _isMoving = false;
+
+            if (!blackboard.TryGetRange(_rangeKey, out var indices) || indices == null)
+            {
+                return false;
+            }
+
+            var minIndex = int.MaxValue;
+            var maxIndex = int.MinValue;
+
+            foreach (var index in indices)
+            {
+                if (index < 0 || index >= blackboard.Telegraphs.Length)
+                {
+                    continue;
+                }
+
+                var tile = blackboard.Telegraphs[index];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                tile.SetWarningVisible(showWarning);
+                tile.SetDamageActive(false);
+                _activeTiles.Add(tile);
+
+                minIndex = Mathf.Min(minIndex, index);
+                maxIndex = Mathf.Max(maxIndex, index);
+            }
+
+            if (_activeTiles.Count == 0 || minIndex == int.MaxValue || maxIndex == int.MinValue)
+            {
+                return false;
+            }
+
+            _movingTile = blackboard.Telegraphs[maxIndex];
+            var targetTile = blackboard.Telegraphs[minIndex];
+            if (_movingTile == null || targetTile == null)
+            {
+                return false;
+            }
+
+            _moveStartPosition = _movingTile.transform.position;
+            _moveTargetPosition = targetTile.transform.position;
+            return true;
+        }
+
+        protected override void EndWarningAndAttack(BossBlackboard blackboard)
+        {
+            SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+
+            if (_movingTile == null)
+            {
+                RequestFailure();
+                return;
+            }
+
+            _movingTile.transform.position = _moveStartPosition;
+            _movingTile.SetDamageActive(true);
+            _moveElapsed = 0f;
+            _isMoving = true;
+        }
+
+        protected override bool IsAttackFinished(BossBlackboard blackboard, float deltaTime)
+        {
+            if (!_isMoving || _movingTile == null)
+            {
+                return true;
+            }
+
+            _moveElapsed += deltaTime;
+            var t = _moveDuration <= Mathf.Epsilon ? 1f : Mathf.Clamp01(_moveElapsed / _moveDuration);
+            _movingTile.transform.position = Vector3.Lerp(_moveStartPosition, _moveTargetPosition, t);
+
+            if (t < 1f)
+            {
+                return false;
+            }
+
+            _movingTile.SetDamageActive(false);
+            _isMoving = false;
+            return true;
+        }
+
+        protected override void OnReset(bool preserveWarnings)
+        {
+            if (!preserveWarnings)
+            {
+                SkillNodeUtils.SetWarning(_activeTiles, false, Name);
+            }
+
+            SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+
+            if (_movingTile != null)
+            {
+                _movingTile.transform.position = _moveStartPosition;
+            }
+
+            _activeTiles.Clear();
+            _movingTile = null;
+            _moveElapsed = 0f;
+            _isMoving = false;
+        }
     }
 
     public sealed class ArmSwipSkillNode : TimedRangeSkillNode

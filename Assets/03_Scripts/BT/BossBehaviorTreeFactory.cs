@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 namespace BT
@@ -30,8 +30,65 @@ namespace BT
             });
         }
 
-        private static ConditionNode<BossBlackboard> RequirePhase(string name, int phase)
-                   => new(name, bb => bb.CurrentPhase == phase);
+        private static ActionNode<BossBlackboard> PhaseChecker1(string name)
+            => new(name, bb =>
+            {
+                var hp = bb.BossCurrentHp;
+                var currPhase = bb.CurrentPhase;
+
+                if (currPhase == 1)
+                {
+                    return hp < bb.Phase2Threshold ? NodeState.Failure : NodeState.Success;
+                }
+
+                if (hp >= bb.Phase2Threshold)
+                {
+                    bb.SetCurrentPhase(1);
+                    return NodeState.Success;
+                }
+
+                return NodeState.Failure;
+            });
+
+        private static ActionNode<BossBlackboard> PhaseChecker2(string name)
+            => new(name, bb =>
+            {
+                var hp = bb.BossCurrentHp;
+                var currPhase = bb.CurrentPhase;
+
+                if (currPhase == 2)
+                {
+                    return bb.IsPhase3Triggered ? NodeState.Failure : NodeState.Success;
+                }
+
+                if (hp < bb.Phase2Threshold && !bb.IsPhase3Triggered)
+                {
+                    bb.SetCurrentPhase(2);
+                    return NodeState.Success;
+                }
+
+                return NodeState.Failure;
+            });
+
+        private static ActionNode<BossBlackboard> PhaseChecker3(string name)
+            => new(name, bb =>
+            {
+                var hp = bb.BossCurrentHp;
+                var currPhase = bb.CurrentPhase;
+
+                if (currPhase == 3)
+                {
+                    return NodeState.Success;
+                }
+
+                if (hp < bb.Phase2Threshold && bb.IsPhase3Triggered)
+                {
+                    bb.SetCurrentPhase(3);
+                    return NodeState.Success;
+                }
+
+                return NodeState.Failure;
+            });
 
         private static ActionNode<BossBlackboard> CooldownNode(string name, int skillCount)
             => new(name, bb => bb.TickCooldownAndPreparePattern(Time.deltaTime, skillCount) ? NodeState.Success : NodeState.Running);
@@ -75,7 +132,7 @@ namespace BT
                 return new ArmStretchSkillNode(name, key, warningDuration: warning, attackDuration: attack);
             }
 
-            return new ArmSmashSkillNode(name, key, warningDuration: warning, attackDuration: attack);
+            return new ArmSmashSkillNode(name, key, warningDuration: warning, attackDuration: Mathf.Max(attack, 0.7f));
         }
 
         private static BTNode<BossBlackboard> WeightedSkill(string nodeName, int skillIndex, int skillCount, BTNode<BossBlackboard> pattern)
@@ -245,12 +302,12 @@ namespace BT
                 .AddChild(CooldownNode("Phase_1_CoolDown", 5));
 
             var phase1 = new SequenceNode<BossBlackboard>("Phase_1")
-                .AddChild(RequirePhase("Phase_1_Check", 1))
+                .AddChild(PhaseChecker1("PhaseChecker_1"))
                 .AddChild(phase1CooldownAndHit)
                 .AddChild(phase1Skills);
 
             var phase2 = new SequenceNode<BossBlackboard>("Phase_2")
-                .AddChild(RequirePhase("Phase_2_Check", 2))
+                .AddChild(PhaseChecker2("PhaseChecker_2"))
                 .AddChild(CooldownNode("Phase_2_CoolDown", 3))
                 .AddChild(phase2Skills);
 
@@ -259,7 +316,7 @@ namespace BT
                 .AddChild(CooldownNode("Phase_3_CoolDown", 5));
 
             var phase3 = new SequenceNode<BossBlackboard>("Phase_3")
-                .AddChild(RequirePhase("Phase_3_Check", 3))
+                .AddChild(PhaseChecker3("PhaseChecker_3"))
                 .AddChild(phase3CooldownAndHit)
                 .AddChild(phase3Skills);
 

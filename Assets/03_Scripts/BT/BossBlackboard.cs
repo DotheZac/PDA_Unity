@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,10 +21,11 @@ namespace BT
 
         [Header("Phase")]
         [SerializeField] private float bossCurrentHp = 100f;
-        [SerializeField] private int currentPhase = 1;
+        [SerializeField] private int currentPhase = 0;
         [SerializeField] private bool phase3Triggered;
         [SerializeField] private float phase2Threshold = 50f;
-        [SerializeField] private float phase3Threshold = 45f;
+        [SerializeField] private float phase2To3Delay = 20f;
+        [SerializeField] private float phase2ElapsedTime;
 
         [Header("Pattern Cooldown")]
         [SerializeField] private float idleCooldown = 1.0f;
@@ -41,16 +42,13 @@ namespace BT
         public TelegraphTile[] Telegraphs => telegraphs;
         public float BossCurrentHp { get => bossCurrentHp; set => bossCurrentHp = value; }
         public bool CanBeHit => canBeHit;
+        public bool IsPhase3Triggered => phase3Triggered;
+        public float Phase2Threshold => phase2Threshold;
+        public float Phase2To3Delay => phase2To3Delay;
+        public float Phase2ElapsedTime => phase2ElapsedTime;
         public PatternExecutionMode ExecutionMode => _executionMode;
 
-        public int CurrentPhase
-        {
-            get
-            {
-                UpdatePhase();
-                return currentPhase;
-            }
-        }
+        public int CurrentPhase => currentPhase;
 
         private void Awake()
         {
@@ -69,6 +67,47 @@ namespace BT
         public void SetPatternExecutionMode(PatternExecutionMode mode)
         {
             _executionMode = mode;
+        }
+
+        public void SetCurrentPhase(int phase)
+        {
+            if (currentPhase == phase)
+            {
+                return;
+            }
+
+            currentPhase = phase;
+            if (phase == 2)
+            {
+                phase2ElapsedTime = 0f;
+                phase3Triggered = false;
+                return;
+            }
+
+            if (phase == 1)
+            {
+                phase2ElapsedTime = 0f;
+                phase3Triggered = false;
+            }
+        }
+
+        public void SetPhase3Triggered(bool triggered)
+        {
+            phase3Triggered = triggered;
+        }
+
+        public void TickPhaseTimer(float deltaTime)
+        {
+            if (currentPhase != 2 || phase3Triggered)
+            {
+                return;
+            }
+
+            phase2ElapsedTime += deltaTime;
+            if (phase2ElapsedTime >= phase2To3Delay)
+            {
+                phase3Triggered = true;
+            }
         }
 
         public bool TryGetRange(string key, out int[] indices)
@@ -165,8 +204,6 @@ namespace BT
 
         public bool TickCooldownAndPreparePattern(float deltaTime, int skillCount)
         {
-            UpdatePhase();
-
             elapsedIdleTime += deltaTime;
             if (elapsedIdleTime < idleCooldown)
             {
@@ -184,8 +221,6 @@ namespace BT
 
         public bool TryConsumeSkillChance(int skillIndex, int skillCount)
         {
-            UpdatePhase();
-
             if (skillIndex < 1 || skillIndex > skillCount || skillCount < 1 || skillCount > _skillChances.Length)
             {
                 return false;
@@ -250,29 +285,6 @@ namespace BT
                 _skillChances[i] = 0f;
             }
         }
-
-        private void UpdatePhase()
-        {
-            if (currentPhase == 2 && bossCurrentHp < phase3Threshold)
-            {
-                phase3Triggered = true;
-            }
-
-            if (phase3Triggered && bossCurrentHp < phase2Threshold)
-            {
-                currentPhase = 3;
-                return;
-            }
-
-            if (bossCurrentHp >= phase2Threshold)
-            {
-                currentPhase = 1;
-                return;
-            }
-
-            currentPhase = 2;
-        }
-
         [ContextMenu("Auto Collect Telegraph Tiles (Children)")]
         public void AutoCollectTelegraphsFromChildren()
         {

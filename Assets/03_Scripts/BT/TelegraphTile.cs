@@ -1,4 +1,3 @@
-﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -13,6 +12,10 @@ namespace BT
         public bool IsDamageActive
             => damageCollider != null && damageCollider.enabled;
 
+        [Header("Damage")]
+        [SerializeField] private int damagePerHit = 1;
+        [SerializeField] private float hitInterval = 0.35f;
+
         [SerializeField] private Collider2D damageCollider;
         [SerializeField] private SpriteRenderer warningRenderer;
         [SerializeField] private Behaviour warningEffect;
@@ -21,6 +24,7 @@ namespace BT
 
         private bool _warningVisibleRequested;
         private bool _damageActiveRequested;
+        private readonly Dictionary<int, float> _nextHitTimeByTarget = new();
 
         private void Awake()
         {
@@ -40,8 +44,35 @@ namespace BT
         {
             _warningVisibleRequested = false;
             _damageActiveRequested = false;
+            _nextHitTimeByTarget.Clear();
             ApplyVisualState();
             SetDamageCollider(false);
+        }
+
+        private void OnDisable()
+        {
+            _nextHitTimeByTarget.Clear();
+        }
+
+        private void OnTriggerEnter2D(Collider2D other)
+        {
+            TryApplyDamage(other);
+        }
+
+        private void OnTriggerStay2D(Collider2D other)
+        {
+            TryApplyDamage(other);
+        }
+
+        private void OnTriggerExit2D(Collider2D other)
+        {
+            var status = ResolvePlayerStatus(other);
+            if (status == null)
+            {
+                return;
+            }
+
+            _nextHitTimeByTarget.Remove(status.GetInstanceID());
         }
 
         private void Reset()
@@ -52,6 +83,15 @@ namespace BT
         private void OnValidate()
         {
             AutoBindComponents();
+            if (damagePerHit < 0)
+            {
+                damagePerHit = 0;
+            }
+
+            if (hitInterval < 0f)
+            {
+                hitInterval = 0f;
+            }
         }
 
         [ContextMenu("Auto Bind Components")]
@@ -96,6 +136,11 @@ namespace BT
             _damageActiveRequested = active;
             SetDamageCollider(active);
             ApplyVisualState();
+
+            if (!active)
+            {
+                _nextHitTimeByTarget.Clear();
+            }
         }
 
         private void SetDamageCollider(bool active)
@@ -106,6 +151,50 @@ namespace BT
             }
 
             damageCollider.enabled = active;
+        }
+
+        private void TryApplyDamage(Collider2D other)
+        {
+            if (!IsDamageActive || damagePerHit <= 0)
+            {
+                return;
+            }
+
+            var status = ResolvePlayerStatus(other);
+            if (status == null)
+            {
+                return;
+            }
+
+            var key = status.GetInstanceID();
+            var now = Time.time;
+            if (_nextHitTimeByTarget.TryGetValue(key, out var nextHitTime) && now < nextHitTime)
+            {
+                return;
+            }
+
+            if (!status.TakeDamage(damagePerHit))
+            {
+                return;
+            }
+
+            _nextHitTimeByTarget[key] = now + hitInterval;
+        }
+
+        private static PlayerStatus ResolvePlayerStatus(Collider2D other)
+        {
+            if (other == null)
+            {
+                return null;
+            }
+
+            var status = other.GetComponent<PlayerStatus>();
+            if (status != null)
+            {
+                return status;
+            }
+
+            return other.GetComponentInParent<PlayerStatus>();
         }
 
         private void ApplyVisualState()
