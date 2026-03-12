@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using BT;
 
 public class BossAIController : MonoBehaviour
@@ -19,6 +19,7 @@ public class BossAIController : MonoBehaviour
             return;
         }
 
+        blackboard.TickPhaseTimer(Time.deltaTime);
         blackboard.SetPatternExecutionMode(PatternExecutionMode.Normal);
         _root.Tick(blackboard, Time.deltaTime);
     }
