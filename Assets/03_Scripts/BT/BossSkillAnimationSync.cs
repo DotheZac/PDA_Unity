@@ -19,7 +19,7 @@ namespace BT
             [Tooltip("State name to play when the attack starts.")]
             public string attackStateName = "Attack";
 
-            [Min(-2)]
+            [Min(0)]
             public int layer;
 
             [Range(0.1f, 1f)]
@@ -68,18 +68,22 @@ namespace BT
             var binding = FindBinding(skillName);
             if (binding == null)
             {
+                Debug.LogWarning($"[BossSkillAnimationSync] No binding matched skill '{skillName}'.", this);
                 return false;
             }
 
-            var animator = FindAvailableAnimator(binding);
+            var animator = FindAvailableAnimator(binding, skillName);
             if (animator == null)
             {
+                Debug.LogWarning($"[BossSkillAnimationSync] No available animator for skill '{skillName}' in binding '{binding.skillKeyContains}'.", this);
                 return false;
             }
 
             PrepareAnimatorForPlay(binding, animator);
-            animator.Play(binding.attackStateName, binding.layer, 0f);
+            var layer = SanitizeLayer(binding, animator);
+            animator.Play(binding.attackStateName, layer, 0f);
             animator.Update(0f);
+            Debug.Log($"[BossSkillAnimationSync] Play skill '{skillName}' with animator '{animator.name}' (state='{binding.attackStateName}', layer={layer}).", this);
             _running[skillName] = new RunningEntry
             {
                 Binding = binding,
@@ -159,13 +163,39 @@ namespace BT
             return null;
         }
 
-        private Animator FindAvailableAnimator(Binding binding)
+        private Animator FindAvailableAnimator(Binding binding, string skillName)
         {
             if (binding.animators == null || binding.animators.Count == 0)
             {
                 return null;
             }
 
+            // First pass: pick animator explicitly matched to the current skill name.
+            for (var i = 0; i < binding.animators.Count; i++)
+            {
+                var animator = binding.animators[i];
+                if (animator == null)
+                {
+                    continue;
+                }
+
+                if (!IsPreferredAnimatorForSkill(animator, skillName))
+                {
+                    continue;
+                }
+
+                if (IsAnimatorReserved(animator))
+                {
+                    continue;
+                }
+
+                if (!IsStillRunning(binding, animator))
+                {
+                    return animator;
+                }
+            }
+
+            // Fallback pass: pick any available animator from the pool.
             for (var i = 0; i < binding.animators.Count; i++)
             {
                 var animator = binding.animators[i];
@@ -186,6 +216,16 @@ namespace BT
             }
 
             return null;
+        }
+
+        private static bool IsPreferredAnimatorForSkill(Animator animator, string skillName)
+        {
+            if (animator == null || string.IsNullOrWhiteSpace(skillName))
+            {
+                return false;
+            }
+
+            return animator.name.IndexOf(skillName, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private bool IsAnimatorReserved(Animator animator)
@@ -312,18 +352,31 @@ namespace BT
                 return false;
             }
 
-            var info = animator.GetCurrentAnimatorStateInfo(binding.layer);
+            var layer = SanitizeLayer(binding, animator);
+            var info = animator.GetCurrentAnimatorStateInfo(layer);
             if (!info.IsName(binding.attackStateName))
             {
                 return false;
             }
 
-            if (animator.IsInTransition(binding.layer))
+            if (animator.IsInTransition(layer))
             {
                 return true;
             }
 
             return info.normalizedTime < binding.endNormalizedTime;
+        }
+
+        private static int SanitizeLayer(Binding binding, Animator animator)
+        {
+            if (animator == null)
+            {
+                return 0;
+            }
+
+            var maxLayer = Mathf.Max(0, animator.layerCount - 1);
+            var configured = binding == null ? 0 : binding.layer;
+            return Mathf.Clamp(configured, 0, maxLayer);
         }
     }
 }

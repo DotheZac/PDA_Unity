@@ -19,6 +19,15 @@ namespace BT
         [Header("Animation Sync")]
         [SerializeField] private BossSkillAnimationSync animationSync;
 
+        [Header("TV Laser")]
+        [SerializeField] private Animator tvAnimator;
+        [SerializeField] private string tvLaserBoolParameter = "IsLaser";
+        [SerializeField] private string tvLaserFireTriggerParameter = "Fire";
+        [SerializeField] private int tvLaserLayer;
+        [SerializeField] private string tvLaserChargingStateName = "charging";
+        [SerializeField] private string tvLaserFireStateName = "fire";
+        [SerializeField] private bool hideTvWhenIdle = true;
+
         [Header("Pattern Range")]
         [SerializeField] private List<PatternRange> ranges;
 
@@ -38,6 +47,7 @@ namespace BT
         private readonly Dictionary<string, int[]> _rangeMap = new();
         private readonly float[] _skillWeights = { 1f, 1f, 1f, 1f, 1f };
         private readonly float[] _skillChances = new float[5];
+        private Renderer[] _tvRenderers = Array.Empty<Renderer>();
         private float _randomValue;
         private float _pendingDamage;
         private PatternExecutionMode _executionMode = PatternExecutionMode.Normal;
@@ -65,6 +75,18 @@ namespace BT
 
                 _rangeMap[range.Key] = range.Indices;
             }
+
+            if (tvAnimator == null)
+            {
+                var tvRoot = transform.Find("TV");
+                if (tvRoot != null)
+                {
+                    tvAnimator = tvRoot.GetComponentInChildren<Animator>(true);
+                }
+            }
+
+            CacheTvRenderers();
+            SetTvLaserActive(false);
         }
 
         public void SetPatternExecutionMode(PatternExecutionMode mode)
@@ -200,6 +222,141 @@ namespace BT
         public void ClearAllAttackAnimations()
         {
             animationSync?.ClearAll();
+        }
+
+        public void SetTvLaserActive(bool isActive)
+        {
+            if (tvAnimator == null)
+            {
+                return;
+            }
+
+            if (!tvAnimator.gameObject.activeSelf)
+            {
+                tvAnimator.gameObject.SetActive(true);
+            }
+
+            if (HasAnimatorBoolParameter(tvAnimator, tvLaserBoolParameter))
+            {
+                tvAnimator.SetBool(tvLaserBoolParameter, isActive);
+            }
+
+            if (isActive)
+            {
+                PlayTvLaserState(tvLaserChargingStateName);
+            }
+
+            ApplyTvVisibility(isActive);
+        }
+
+        public void TriggerTvLaserFire()
+        {
+            if (tvAnimator == null)
+            {
+                return;
+            }
+
+            if (HasAnimatorTriggerParameter(tvAnimator, tvLaserFireTriggerParameter))
+            {
+                tvAnimator.ResetTrigger(tvLaserFireTriggerParameter);
+                tvAnimator.SetTrigger(tvLaserFireTriggerParameter);
+                return;
+            }
+
+            // Fallback when controller has no trigger parameter.
+            PlayTvLaserState(tvLaserFireStateName);
+        }
+
+        private void CacheTvRenderers()
+        {
+            if (tvAnimator == null)
+            {
+                _tvRenderers = Array.Empty<Renderer>();
+                return;
+            }
+
+            _tvRenderers = tvAnimator.GetComponentsInChildren<Renderer>(true);
+        }
+
+        private void ApplyTvVisibility(bool isVisible)
+        {
+            if (!hideTvWhenIdle)
+            {
+                return;
+            }
+
+            if (_tvRenderers == null || _tvRenderers.Length == 0)
+            {
+                CacheTvRenderers();
+            }
+
+            for (var i = 0; i < _tvRenderers.Length; i++)
+            {
+                var renderer = _tvRenderers[i];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                renderer.enabled = isVisible;
+            }
+        }
+
+        private void PlayTvLaserState(string stateName)
+        {
+            if (tvAnimator == null || string.IsNullOrWhiteSpace(stateName))
+            {
+                return;
+            }
+
+            var layer = Mathf.Clamp(tvLaserLayer, 0, Mathf.Max(0, tvAnimator.layerCount - 1));
+            if (!tvAnimator.HasState(layer, Animator.StringToHash(stateName)))
+            {
+                return;
+            }
+
+            tvAnimator.Play(stateName, layer, 0f);
+            tvAnimator.Update(0f);
+        }
+
+        private static bool HasAnimatorBoolParameter(Animator animator, string paramName)
+        {
+            if (animator == null || string.IsNullOrWhiteSpace(paramName))
+            {
+                return false;
+            }
+
+            var parameters = animator.parameters;
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                var p = parameters[i];
+                if (p.type == AnimatorControllerParameterType.Bool && p.name == paramName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasAnimatorTriggerParameter(Animator animator, string paramName)
+        {
+            if (animator == null || string.IsNullOrWhiteSpace(paramName))
+            {
+                return false;
+            }
+
+            var parameters = animator.parameters;
+            for (var i = 0; i < parameters.Length; i++)
+            {
+                var p = parameters[i];
+                if (p.type == AnimatorControllerParameterType.Trigger && p.name == paramName)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public void QueueDamage(float damage)

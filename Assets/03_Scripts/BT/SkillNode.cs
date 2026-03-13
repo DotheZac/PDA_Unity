@@ -411,6 +411,9 @@ namespace BT
         private readonly float _stepInterval;
         private readonly List<TelegraphTile> _activeTiles = new();
         private readonly List<int> _activeIndices = new();
+        private bool _phase1TvLaserActivated;
+        private bool _phase1TvLaserFireTriggered;
+        private BossBlackboard _ownerBlackboard;
 
         private int _step;
         private int _centerIndex;
@@ -429,6 +432,8 @@ namespace BT
 
         protected override bool InitializeSkill(BossBlackboard blackboard, bool showWarning)
         {
+            _ownerBlackboard = blackboard;
+
             if (!SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles, showWarning))
             {
                 return false;
@@ -462,6 +467,19 @@ namespace BT
             }
 
             _centerIndex = (_minIndex + _maxIndex) / 2;
+
+            // Phase 1 laser TV effect should start during warning.
+            if (showWarning && blackboard.CurrentPhase == 1 && !_phase1TvLaserActivated)
+            {
+                blackboard.SetTvLaserActive(true);
+                _phase1TvLaserActivated = true;
+            }
+
+            if (showWarning && blackboard.CurrentPhase == 1)
+            {
+                _phase1TvLaserFireTriggered = false;
+            }
+
             return true;
         }
 
@@ -473,6 +491,19 @@ namespace BT
             _prevLeft = -1;
             _prevRight = -1;
             _stepElapsed = _stepInterval;
+
+            // Fallback for direct attack-only execution without a warning stage.
+            if (blackboard.CurrentPhase == 1 && !_phase1TvLaserActivated)
+            {
+                blackboard.SetTvLaserActive(true);
+                _phase1TvLaserActivated = true;
+            }
+
+            if (blackboard.CurrentPhase == 1)
+            {
+                blackboard.TriggerTvLaserFire();
+                _phase1TvLaserFireTriggered = true;
+            }
         }
 
         protected override bool IsAttackFinished(BossBlackboard blackboard, float deltaTime)
@@ -533,6 +564,14 @@ namespace BT
             _prevLeft = -1;
             _prevRight = -1;
             _stepElapsed = 0f;
+
+            // Keep charging until fire has actually been triggered.
+            if (_phase1TvLaserActivated && !preserveWarnings && _phase1TvLaserFireTriggered)
+            {
+                _ownerBlackboard?.SetTvLaserActive(false);
+                _phase1TvLaserActivated = false;
+                _phase1TvLaserFireTriggered = false;
+            }
         }
     }
 
