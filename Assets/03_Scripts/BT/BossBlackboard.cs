@@ -16,6 +16,9 @@ namespace BT
         [Header("Telegraph")]
         [SerializeField] private TelegraphTile[] telegraphs;
 
+        [Header("Animation Sync")]
+        [SerializeField] private BossSkillAnimationSync animationSync;
+
         [Header("Pattern Range")]
         [SerializeField] private List<PatternRange> ranges;
 
@@ -172,6 +175,31 @@ namespace BT
             }
 
             return false;
+        }
+
+        public void TickAnimationSync()
+        {
+            animationSync?.Tick();
+        }
+
+        public bool TryPlayAttackAnimation(string skillName)
+        {
+            return animationSync != null && animationSync.TryPlay(skillName);
+        }
+
+        public bool IsAttackAnimationRunning(string skillName)
+        {
+            return animationSync != null && animationSync.IsRunning(skillName);
+        }
+
+        public bool HasAnyRunningAttackAnimation()
+        {
+            return animationSync != null && animationSync.HasAnyRunning;
+        }
+
+        public void ClearAllAttackAnimations()
+        {
+            animationSync?.ClearAll();
         }
 
         public void QueueDamage(float damage)

@@ -10,6 +10,8 @@ namespace BT
         private bool _attacked;
         private float _elapsed;
         private bool _preserveWarningOnReset;
+        private bool _attackAnimRequested;
+        private bool _attackAnimStarted;
         protected bool FailRequested { get; private set; }
 
         protected SkillNode(string name, float warningDuration) : base(name)
@@ -34,6 +36,8 @@ namespace BT
             _attacked = false;
             _elapsed = 0f;
             _preserveWarningOnReset = false;
+            _attackAnimRequested = false;
+            _attackAnimStarted = false;
             FailRequested = false;
             OnReset(preserveWarnings);
         }
@@ -44,6 +48,27 @@ namespace BT
         protected abstract void EndWarningAndAttack(BossBlackboard blackboard);
         protected virtual bool IsAttackFinished(BossBlackboard blackboard, float deltaTime) => true;
         protected virtual void OnReset(bool preserveWarnings) { }
+
+        private void TryStartAttackAnimation(BossBlackboard blackboard)
+        {
+            if (_attackAnimRequested)
+            {
+                return;
+            }
+
+            _attackAnimRequested = true;
+            _attackAnimStarted = blackboard.TryPlayAttackAnimation(Name);
+        }
+
+        private bool IsAttackAnimationBlocking(BossBlackboard blackboard)
+        {
+            if (!_attackAnimRequested || !_attackAnimStarted)
+            {
+                return false;
+            }
+
+            return blackboard.IsAttackAnimationRunning(Name);
+        }
 
         private NodeState TickNormal(BossBlackboard blackboard, float deltaTime)
         {
@@ -80,6 +105,7 @@ namespace BT
             {
                 EndWarningAndAttack(blackboard);
                 _attacked = true;
+                TryStartAttackAnimation(blackboard);
 
                 if (FailRequested)
                 {
@@ -89,6 +115,11 @@ namespace BT
             }
 
             if (!IsAttackFinished(blackboard, deltaTime))
+            {
+                return NodeState.Running;
+            }
+
+            if (IsAttackAnimationBlocking(blackboard))
             {
                 return NodeState.Running;
             }
@@ -148,9 +179,15 @@ namespace BT
             {
                 EndWarningAndAttack(blackboard);
                 _attacked = true;
+                TryStartAttackAnimation(blackboard);
             }
 
             if (!IsAttackFinished(blackboard, deltaTime))
+            {
+                return NodeState.Running;
+            }
+
+            if (IsAttackAnimationBlocking(blackboard))
             {
                 return NodeState.Running;
             }
