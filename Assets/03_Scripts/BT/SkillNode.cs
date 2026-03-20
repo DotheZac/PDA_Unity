@@ -57,6 +57,12 @@ namespace BT
             }
 
             _attackAnimRequested = true;
+            if (!blackboard.HasAttackAnimationBinding(Name))
+            {
+                _attackAnimStarted = false;
+                return;
+            }
+
             _attackAnimStarted = blackboard.TryPlayAttackAnimation(Name);
         }
 

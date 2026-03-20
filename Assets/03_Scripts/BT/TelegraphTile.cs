@@ -527,8 +527,7 @@ namespace BT
                 return;
             }
 
-            damageEffectAnimator.Rebind();
-            damageEffectAnimator.Update(0f);
+            SafeRebindAndUpdate(damageEffectAnimator);
 
             if (hideDamageEffectWhenIdle)
             {
@@ -548,8 +547,7 @@ namespace BT
                 return;
             }
 
-            pickDamageEffectAnimator.Rebind();
-            pickDamageEffectAnimator.Update(0f);
+            SafeRebindAndUpdate(pickDamageEffectAnimator);
 
             if (hidePickDamageEffectWhenIdle)
             {
@@ -632,6 +630,23 @@ namespace BT
             }
 
             return false;
+        }
+
+        private static void SafeRebindAndUpdate(Animator animator)
+        {
+            if (animator == null)
+            {
+                return;
+            }
+
+            // Animator.Update throws on inactive GameObject (common during OnDisable).
+            if (!animator.gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            animator.Rebind();
+            animator.Update(0f);
         }
 
         private void TryApplyDamage(Collider2D other)

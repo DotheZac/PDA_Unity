@@ -244,6 +244,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 2052286168}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 86908103}
   warningEffect: {fileID: 86908104}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -626,6 +630,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 0}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 326899446}
   warningEffect: {fileID: 326899447}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -797,6 +805,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 1714008767}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 345625691}
   warningEffect: {fileID: 345625692}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -968,6 +980,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 249608431}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 379902609}
   warningEffect: {fileID: 379902610}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -1138,6 +1154,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 0}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 380785950}
   warningEffect: {fileID: 380785951}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -1309,6 +1329,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 1145702469}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 400731043}
   warningEffect: {fileID: 400731044}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -1586,6 +1610,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 1596651675}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 458651819}
   warningEffect: {fileID: 458651820}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -1929,6 +1957,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 99848101}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 567619326}
   warningEffect: {fileID: 567619327}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -2099,6 +2131,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 0}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 582506166}
   warningEffect: {fileID: 582506167}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -2557,6 +2593,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 1904187054}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 625750431}
   warningEffect: {fileID: 625750432}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -2834,6 +2874,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 1516795501}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 760028120}
   warningEffect: {fileID: 760028121}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -3004,6 +3048,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 0}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 791065217}
   warningEffect: {fileID: 791065218}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -3595,6 +3643,7 @@ GameObject:
   - component: {fileID: 1150668633}
   - component: {fileID: 1150668635}
   - component: {fileID: 1150668636}
+  - component: {fileID: 1150668637}
   m_Layer: 0
   m_Name: BossTest
   m_TagString: Untagged
@@ -3630,6 +3679,16 @@ MonoBehaviour:
   - {fileID: 582506168}
   - {fileID: 380785952}
   - {fileID: 567619328}
+  enableClickHitbox: 1
+  clickDamage: 1
+  clickHitbox: {fileID: 1150668637}
+  autoCreateClickHitbox: 1
+  clickHitboxSize: {x: 5.0935116, y: 3.5536683}
+  clickHitboxOffset: {x: 6.3490744, y: 1.6514288}
+  clickHitboxIsTrigger: 1
+  hitReadySpriteRenderer: {fileID: 1322147292}
+  autoFindHitReadySpriteRenderer: 1
+  hitReadySpriteName: Snipe
   animationSync: {fileID: 1150668636}
   tvAnimator: {fileID: 1438851392}
   tvLaserEffectAnimator: {fileID: 0}
@@ -3676,7 +3735,7 @@ MonoBehaviour:
   phase2Threshold: 50
   phase2To3Delay: 20
   phase2ElapsedTime: 0
-  idleCooldown: 1
+  idleCooldown: 3
   elapsedIdleTime: 0
   canBeHit: 1
   armSmashMoveDuration: 0.5
@@ -3695,6 +3754,7 @@ Transform:
   m_Children:
   - {fileID: 1438851391}
   - {fileID: 1474067135}
+  - {fileID: 1322147291}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1150668635
@@ -3732,6 +3792,51 @@ MonoBehaviour:
     layer: 0
     endNormalizedTime: 0.98
     hideWhenIdle: 1
+--- !u!61 &1150668637
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1150668632}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: 6.3490744, y: 1.6514288}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 4, y: 4}
+    newSize: {x: 4, y: 4}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  serializedVersion: 2
+  m_Size: {x: 5.0935116, y: 3.5536683}
+  m_EdgeRadius: 0
 --- !u!1 &1171157490
 GameObject:
   m_ObjectHideFlags: 0
@@ -3960,6 +4065,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 1607222630}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 1180276542}
   warningEffect: {fileID: 1180276543}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -4300,6 +4409,90 @@ SpriteRenderer:
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 2.6, y: 2.6}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_MaskInteraction: 0
+  m_SpriteSortPoint: 0
+--- !u!1 &1322147290
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1322147291}
+  - component: {fileID: 1322147292}
+  m_Layer: 0
+  m_Name: Snipe
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1322147291
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1322147290}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 6.61, y: 1.03, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1150668634}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &1322147292
+SpriteRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1322147290}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 4
+  m_Sprite: {fileID: 21300000, guid: 61afbda34e7950f40a44fcae20425cc6, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 4, y: 4}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
@@ -5827,6 +6020,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 1924513318}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 1738648458}
   warningEffect: {fileID: 1738648459}
   warningColor: {r: 1, g: 1, b: 1, a: 1}
@@ -6500,6 +6697,10 @@ MonoBehaviour:
   damageEffectStateName: Fire_Ground_Ani
   damageEffectLayer: 0
   hideDamageEffectWhenIdle: 1
+  pickDamageEffectAnimator: {fileID: 0}
+  pickDamageEffectStateName: Boss_Arm_UP_Hit_Ani
+  pickDamageEffectLayer: 0
+  hidePickDamageEffectWhenIdle: 1
   warningRenderer: {fileID: 1997495812}
   warningEffect: {fileID: 1997495813}
   warningColor: {r: 1, g: 1, b: 1, a: 1}

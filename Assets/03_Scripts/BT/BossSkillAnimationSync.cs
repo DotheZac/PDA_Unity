@@ -53,6 +53,11 @@ namespace BT
 
         public bool HasAnyRunning => _running.Count > 0;
 
+        public bool HasBindingForSkill(string skillName)
+        {
+            return FindBinding(skillName) != null;
+        }
+
         public bool TryPlay(string skillName)
         {
             if (string.IsNullOrWhiteSpace(skillName))
