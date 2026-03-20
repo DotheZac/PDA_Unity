@@ -22,6 +22,10 @@ namespace BT
         [SerializeField] private string damageEffectStateName = "Fire_Ground_Ani";
         [SerializeField] private int damageEffectLayer;
         [SerializeField] private bool hideDamageEffectWhenIdle = true;
+        [SerializeField] private Animator pickDamageEffectAnimator;
+        [SerializeField] private string pickDamageEffectStateName = "Boss_Arm_UP_Hit_Ani";
+        [SerializeField] private int pickDamageEffectLayer;
+        [SerializeField] private bool hidePickDamageEffectWhenIdle = true;
         [SerializeField] private SpriteRenderer warningRenderer;
         [SerializeField] private Behaviour warningEffect;
         [SerializeField] private Color warningColor = Color.white;
@@ -31,9 +35,13 @@ namespace BT
         private bool _damageActiveRequested;
         private readonly Dictionary<int, float> _nextHitTimeByTarget = new();
         private Renderer[] _damageEffectRenderers = Array.Empty<Renderer>();
+        private Renderer[] _pickDamageEffectRenderers = Array.Empty<Renderer>();
         private bool _laserDamageEffectRequested;
+        private bool _pickDamageEffectRequested;
         private bool _damageEffectStopRequested;
-        private int _damageEffectStopTargetLoop = 1;
+        private float _damageEffectStopTargetNormalized = 1f;
+        private bool _pickDamageEffectStopRequested;
+        private float _pickDamageEffectStopTargetNormalized = 1f;
 
         private void Awake()
         {
@@ -46,10 +54,13 @@ namespace BT
             _warningVisibleRequested = false;
             _damageActiveRequested = false;
             _laserDamageEffectRequested = false;
+            _pickDamageEffectRequested = false;
             ApplyVisualState();
             SetDamageCollider(false);
             CacheDamageEffectRenderers();
+            CachePickDamageEffectRenderers();
             ForceStopDamageEffect();
+            ForceStopPickDamageEffect();
         }
 
         private void OnEnable()
@@ -57,22 +68,27 @@ namespace BT
             _warningVisibleRequested = false;
             _damageActiveRequested = false;
             _laserDamageEffectRequested = false;
+            _pickDamageEffectRequested = false;
             _nextHitTimeByTarget.Clear();
             ApplyVisualState();
             SetDamageCollider(false);
             CacheDamageEffectRenderers();
+            CachePickDamageEffectRenderers();
             ForceStopDamageEffect();
+            ForceStopPickDamageEffect();
         }
 
         private void OnDisable()
         {
             _nextHitTimeByTarget.Clear();
             ForceStopDamageEffect();
+            ForceStopPickDamageEffect();
         }
 
         private void Update()
         {
             TickDamageEffectStop();
+            TickPickDamageEffectStop();
         }
 
         private void OnTriggerEnter2D(Collider2D other)
@@ -117,6 +133,11 @@ namespace BT
             if (damageEffectLayer < 0)
             {
                 damageEffectLayer = 0;
+            }
+
+            if (pickDamageEffectLayer < 0)
+            {
+                pickDamageEffectLayer = 0;
             }
         }
 
@@ -169,6 +190,27 @@ namespace BT
                     }
                 }
             }
+
+            if (pickDamageEffectAnimator == null)
+            {
+                var animators = GetComponentsInChildren<Animator>(true);
+                for (var i = 0; i < animators.Length; i++)
+                {
+                    var animator = animators[i];
+                    if (animator == null)
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(animator.gameObject.name, "Boss_Arm_Pick", StringComparison.OrdinalIgnoreCase)
+                        || animator.gameObject.name.IndexOf("Boss_Arm_Pick", StringComparison.OrdinalIgnoreCase) >= 0
+                        || animator.gameObject.name.IndexOf("Arm_Pick", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        pickDamageEffectAnimator = animator;
+                        break;
+                    }
+                }
+            }
         }
 
         public void SetWarningVisible(bool visible)
@@ -206,6 +248,23 @@ namespace BT
             RequestDamageEffectStop();
         }
 
+        public void SetPickDamageEffectActive(bool active)
+        {
+            if (_pickDamageEffectRequested == active)
+            {
+                return;
+            }
+
+            _pickDamageEffectRequested = active;
+            if (active)
+            {
+                SetPickDamageEffectActiveInternal(true, restart: true);
+                return;
+            }
+
+            RequestPickDamageEffectStop();
+        }
+
         private void SetDamageCollider(bool active)
         {
             if (damageCollider == null)
@@ -227,6 +286,17 @@ namespace BT
             _damageEffectRenderers = damageEffectAnimator.GetComponentsInChildren<Renderer>(true);
         }
 
+        private void CachePickDamageEffectRenderers()
+        {
+            if (pickDamageEffectAnimator == null)
+            {
+                _pickDamageEffectRenderers = Array.Empty<Renderer>();
+                return;
+            }
+
+            _pickDamageEffectRenderers = pickDamageEffectAnimator.GetComponentsInChildren<Renderer>(true);
+        }
+
         private void SetDamageEffectActive(bool active, bool restart)
         {
             if (damageEffectAnimator == null)
@@ -241,7 +311,7 @@ namespace BT
             }
 
             _damageEffectStopRequested = false;
-            _damageEffectStopTargetLoop = 1;
+            _damageEffectStopTargetNormalized = 1f;
 
             if (!damageEffectAnimator.gameObject.activeSelf)
             {
@@ -285,7 +355,9 @@ namespace BT
 
             var layer = Mathf.Clamp(damageEffectLayer, 0, Mathf.Max(0, damageEffectAnimator.layerCount - 1));
             var info = damageEffectAnimator.GetCurrentAnimatorStateInfo(layer);
-            _damageEffectStopTargetLoop = info.loop ? Mathf.FloorToInt(info.normalizedTime) + 1 : 1;
+            _damageEffectStopTargetNormalized = info.loop
+                ? Mathf.Floor(info.normalizedTime) + 0.98f
+                : 1f;
             _damageEffectStopRequested = true;
         }
 
@@ -300,6 +372,115 @@ namespace BT
             {
                 ForceStopDamageEffect();
             }
+        }
+
+        private void SetPickDamageEffectActiveInternal(bool active, bool restart)
+        {
+            if (pickDamageEffectAnimator == null)
+            {
+                return;
+            }
+
+            if (!active)
+            {
+                ForceStopPickDamageEffect();
+                return;
+            }
+
+            _pickDamageEffectStopRequested = false;
+            _pickDamageEffectStopTargetNormalized = 1f;
+
+            if (!pickDamageEffectAnimator.gameObject.activeSelf)
+            {
+                pickDamageEffectAnimator.gameObject.SetActive(true);
+            }
+
+            if (!pickDamageEffectAnimator.enabled)
+            {
+                pickDamageEffectAnimator.enabled = true;
+            }
+
+            if (!restart)
+            {
+                return;
+            }
+
+            if (!TryPlayPickDamageEffectState())
+            {
+                pickDamageEffectAnimator.Rebind();
+                pickDamageEffectAnimator.Update(0f);
+            }
+
+            if (hidePickDamageEffectWhenIdle)
+            {
+                SetPickDamageEffectVisible(true);
+            }
+        }
+
+        private void RequestPickDamageEffectStop()
+        {
+            if (pickDamageEffectAnimator == null)
+            {
+                return;
+            }
+
+            if (!pickDamageEffectAnimator.isActiveAndEnabled || !pickDamageEffectAnimator.gameObject.activeInHierarchy)
+            {
+                ForceStopPickDamageEffect();
+                return;
+            }
+
+            var layer = Mathf.Clamp(pickDamageEffectLayer, 0, Mathf.Max(0, pickDamageEffectAnimator.layerCount - 1));
+            var info = pickDamageEffectAnimator.GetCurrentAnimatorStateInfo(layer);
+            _pickDamageEffectStopTargetNormalized = info.loop
+                ? Mathf.Floor(info.normalizedTime) + 0.98f
+                : 1f;
+            _pickDamageEffectStopRequested = true;
+        }
+
+        private void TickPickDamageEffectStop()
+        {
+            if (!_pickDamageEffectStopRequested || pickDamageEffectAnimator == null)
+            {
+                return;
+            }
+
+            if (IsPickDamageEffectFinishedCurrentCycle())
+            {
+                ForceStopPickDamageEffect();
+            }
+        }
+
+        private bool IsPickDamageEffectFinishedCurrentCycle()
+        {
+            if (pickDamageEffectAnimator == null)
+            {
+                return true;
+            }
+
+            if (!pickDamageEffectAnimator.isActiveAndEnabled || !pickDamageEffectAnimator.gameObject.activeInHierarchy)
+            {
+                return true;
+            }
+
+            var layer = Mathf.Clamp(pickDamageEffectLayer, 0, Mathf.Max(0, pickDamageEffectAnimator.layerCount - 1));
+            if (pickDamageEffectAnimator.IsInTransition(layer))
+            {
+                return false;
+            }
+
+            var info = pickDamageEffectAnimator.GetCurrentAnimatorStateInfo(layer);
+            if (!string.IsNullOrWhiteSpace(pickDamageEffectStateName) && !info.IsName(pickDamageEffectStateName))
+            {
+                return true;
+            }
+
+            if (info.loop)
+            {
+                return info.normalizedTime >= _pickDamageEffectStopTargetNormalized;
+            }
+
+            return info.normalizedTime >= 1f;
         }
 
         private bool IsDamageEffectFinishedCurrentCycle()
@@ -329,7 +510,7 @@ namespace BT
 
             if (info.loop)
             {
-                return info.normalizedTime >= _damageEffectStopTargetLoop;
+                return info.normalizedTime >= _damageEffectStopTargetNormalized;
             }
 
             return info.normalizedTime >= 1f;
@@ -339,7 +520,7 @@ namespace BT
         {
             _laserDamageEffectRequested = false;
             _damageEffectStopRequested = false;
-            _damageEffectStopTargetLoop = 1;
+            _damageEffectStopTargetNormalized = 1f;
 
             if (damageEffectAnimator == null)
             {
@@ -353,6 +534,27 @@ namespace BT
             {
                 SetDamageEffectVisible(false);
                 damageEffectAnimator.enabled = false;
+            }
+        }
+
+        private void ForceStopPickDamageEffect()
+        {
+            _pickDamageEffectRequested = false;
+            _pickDamageEffectStopRequested = false;
+            _pickDamageEffectStopTargetNormalized = 1f;
+
+            if (pickDamageEffectAnimator == null)
+            {
+                return;
+            }
+
+            pickDamageEffectAnimator.Rebind();
+            pickDamageEffectAnimator.Update(0f);
+
+            if (hidePickDamageEffectWhenIdle)
+            {
+                SetPickDamageEffectVisible(false);
+                pickDamageEffectAnimator.enabled = false;
             }
         }
 
@@ -375,6 +577,25 @@ namespace BT
             }
         }
 
+        private void SetPickDamageEffectVisible(bool visible)
+        {
+            if (_pickDamageEffectRenderers == null || _pickDamageEffectRenderers.Length == 0)
+            {
+                CachePickDamageEffectRenderers();
+            }
+
+            for (var i = 0; i < _pickDamageEffectRenderers.Length; i++)
+            {
+                var renderer = _pickDamageEffectRenderers[i];
+                if (renderer == null || renderer == warningRenderer)
+                {
+                    continue;
+                }
+
+                renderer.enabled = visible;
+            }
+        }
+
         private bool TryPlayDamageEffectState()
         {
             if (damageEffectAnimator == null)
@@ -388,6 +609,25 @@ namespace BT
             {
                 damageEffectAnimator.Play(damageEffectStateName, layer, 0f);
                 damageEffectAnimator.Update(0f);
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool TryPlayPickDamageEffectState()
+        {
+            if (pickDamageEffectAnimator == null)
+            {
+                return false;
+            }
+
+            var layer = Mathf.Clamp(pickDamageEffectLayer, 0, Mathf.Max(0, pickDamageEffectAnimator.layerCount - 1));
+            if (!string.IsNullOrWhiteSpace(pickDamageEffectStateName)
+                && pickDamageEffectAnimator.HasState(layer, Animator.StringToHash(pickDamageEffectStateName)))
+            {
+                pickDamageEffectAnimator.Play(pickDamageEffectStateName, layer, 0f);
+                pickDamageEffectAnimator.Update(0f);
                 return true;
             }
 

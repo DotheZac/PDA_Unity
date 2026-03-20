@@ -350,6 +350,7 @@ namespace BT
         private readonly List<TelegraphTile> _activeTiles = new();
         private float _attackElapsed;
         private bool _damageEnabled;
+        private bool _damageWindowCompleted;
 
         public PickSkillNode(string name, string rangeKey, float warningDuration = 0.9f, float attackDuration = 0.95f, float damageStart = 0.5f, float damageEnd = 0.8f)
             : base(name, warningDuration)
@@ -369,24 +370,29 @@ namespace BT
         {
             SkillNodeUtils.SetWarning(_activeTiles, false, Name);
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+            SetPickDamageEffects(false);
             _attackElapsed = 0f;
             _damageEnabled = false;
+            _damageWindowCompleted = false;
         }
 
         protected override bool IsAttackFinished(BossBlackboard blackboard, float deltaTime)
         {
             _attackElapsed += deltaTime;
 
-            if (!_damageEnabled && _attackElapsed >= _damageStart)
+            if (!_damageWindowCompleted && !_damageEnabled && _attackElapsed >= _damageStart)
             {
                 SkillNodeUtils.SetDamage(_activeTiles, true, Name);
+                SetPickDamageEffects(true);
                 _damageEnabled = true;
             }
 
-            if (_damageEnabled && _attackElapsed >= _damageEnd)
+            if (!_damageWindowCompleted && _damageEnabled && _attackElapsed >= _damageEnd)
             {
                 SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+                SetPickDamageEffects(false);
                 _damageEnabled = false;
+                _damageWindowCompleted = true;
             }
 
             return _attackElapsed >= _attackDuration;
@@ -400,9 +406,25 @@ namespace BT
             }
 
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+            SetPickDamageEffects(false);
             _activeTiles.Clear();
             _attackElapsed = 0f;
             _damageEnabled = false;
+            _damageWindowCompleted = false;
+        }
+
+        private void SetPickDamageEffects(bool active)
+        {
+            for (var i = 0; i < _activeTiles.Count; i++)
+            {
+                var tile = _activeTiles[i];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                tile.SetPickDamageEffectActive(active);
+            }
         }
     }
 
