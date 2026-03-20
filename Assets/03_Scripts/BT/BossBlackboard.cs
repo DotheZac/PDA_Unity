@@ -45,6 +45,9 @@ namespace BT
         [SerializeField] private float elapsedIdleTime;
         [SerializeField] private bool canBeHit = true;
 
+        [Header("Skill Timing")]
+        [SerializeField, Min(0.01f)] private float armSmashMoveDuration = 0.7f;
+
         private readonly Dictionary<string, int[]> _rangeMap = new();
         private readonly float[] _skillWeights = { 1f, 1f, 1f, 1f, 1f };
         private readonly float[] _skillChances = new float[5];
@@ -62,6 +65,7 @@ namespace BT
         public float Phase2To3Delay => phase2To3Delay;
         public float Phase2ElapsedTime => phase2ElapsedTime;
         public PatternExecutionMode ExecutionMode => _executionMode;
+        public float ArmSmashMoveDuration => Mathf.Max(0.01f, armSmashMoveDuration);
 
         public int CurrentPhase => currentPhase;
 

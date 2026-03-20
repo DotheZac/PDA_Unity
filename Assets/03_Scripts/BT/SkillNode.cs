@@ -200,7 +200,7 @@ namespace BT
     public sealed class ArmSmashSkillNode : SkillNode
     {
         private readonly string _rangeKey;
-        private readonly float _moveDuration;
+        private readonly float _defaultMoveDuration;
         private readonly List<TelegraphTile> _activeTiles = new();
 
         private TelegraphTile _movingTile;
@@ -213,7 +213,7 @@ namespace BT
             : base(name, warningDuration)
         {
             _rangeKey = rangeKey;
-            _moveDuration = attackDuration;
+            _defaultMoveDuration = Mathf.Max(0.01f, attackDuration);
         }
 
         protected override bool InitializeSkill(BossBlackboard blackboard, bool showWarning)
@@ -294,7 +294,8 @@ namespace BT
             }
 
             _moveElapsed += deltaTime;
-            var t = _moveDuration <= Mathf.Epsilon ? 1f : Mathf.Clamp01(_moveElapsed / _moveDuration);
+            var moveDuration = blackboard != null ? blackboard.ArmSmashMoveDuration : _defaultMoveDuration;
+            var t = moveDuration <= Mathf.Epsilon ? 1f : Mathf.Clamp01(_moveElapsed / moveDuration);
             _movingTile.transform.position = Vector3.Lerp(_moveStartPosition, _moveTargetPosition, t);
 
             if (t < 1f)
@@ -487,6 +488,7 @@ namespace BT
         {
             SkillNodeUtils.SetWarning(_activeTiles, false, Name);
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+            SetLaserDamageEffects(false);
             _step = 0;
             _prevLeft = -1;
             _prevRight = -1;
@@ -521,12 +523,14 @@ namespace BT
             if (left >= _minIndex)
             {
                 blackboard.Telegraphs[left].SetDamageActive(true);
+                blackboard.Telegraphs[left].SetLaserDamageEffectActive(true);
                 Debug.Log($"[SkillNode] {Name} activated damage tile: {SkillNodeUtils.DescribeTile(blackboard.Telegraphs[left])}", blackboard);
             }
 
             if (right <= _maxIndex)
             {
                 blackboard.Telegraphs[right].SetDamageActive(true);
+                blackboard.Telegraphs[right].SetLaserDamageEffectActive(true);
                 if (right != left)
                 {
                     Debug.Log($"[SkillNode] {Name} activated damage tile: {SkillNodeUtils.DescribeTile(blackboard.Telegraphs[right])}", blackboard);
@@ -536,11 +540,13 @@ namespace BT
             if (_prevLeft >= _minIndex && _prevLeft <= _maxIndex)
             {
                 blackboard.Telegraphs[_prevLeft].SetDamageActive(false);
+                blackboard.Telegraphs[_prevLeft].SetLaserDamageEffectActive(false);
             }
 
             if (_prevRight >= _minIndex && _prevRight <= _maxIndex)
             {
                 blackboard.Telegraphs[_prevRight].SetDamageActive(false);
+                blackboard.Telegraphs[_prevRight].SetLaserDamageEffectActive(false);
             }
 
             _prevLeft = left;
@@ -558,6 +564,7 @@ namespace BT
             }
 
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+            SetLaserDamageEffects(false);
             _activeTiles.Clear();
             _activeIndices.Clear();
             _step = 0;
@@ -571,6 +578,20 @@ namespace BT
                 _ownerBlackboard?.SetTvLaserActive(false);
                 _phase1TvLaserActivated = false;
                 _phase1TvLaserFireTriggered = false;
+            }
+        }
+
+        private void SetLaserDamageEffects(bool active)
+        {
+            for (var i = 0; i < _activeTiles.Count; i++)
+            {
+                var tile = _activeTiles[i];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                tile.SetLaserDamageEffectActive(active);
             }
         }
     }

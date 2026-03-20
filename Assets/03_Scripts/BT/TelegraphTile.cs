@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,6 +18,10 @@ namespace BT
         [SerializeField] private float hitInterval = 0.35f;
 
         [SerializeField] private Collider2D damageCollider;
+        [SerializeField] private Animator damageEffectAnimator;
+        [SerializeField] private string damageEffectStateName = "Fire_Ground_Ani";
+        [SerializeField] private int damageEffectLayer;
+        [SerializeField] private bool hideDamageEffectWhenIdle = true;
         [SerializeField] private SpriteRenderer warningRenderer;
         [SerializeField] private Behaviour warningEffect;
         [SerializeField] private Color warningColor = Color.white;
@@ -25,6 +30,10 @@ namespace BT
         private bool _warningVisibleRequested;
         private bool _damageActiveRequested;
         private readonly Dictionary<int, float> _nextHitTimeByTarget = new();
+        private Renderer[] _damageEffectRenderers = Array.Empty<Renderer>();
+        private bool _laserDamageEffectRequested;
+        private bool _damageEffectStopRequested;
+        private int _damageEffectStopTargetLoop = 1;
 
         private void Awake()
         {
@@ -36,22 +45,34 @@ namespace BT
 
             _warningVisibleRequested = false;
             _damageActiveRequested = false;
+            _laserDamageEffectRequested = false;
             ApplyVisualState();
             SetDamageCollider(false);
+            CacheDamageEffectRenderers();
+            ForceStopDamageEffect();
         }
 
         private void OnEnable()
         {
             _warningVisibleRequested = false;
             _damageActiveRequested = false;
+            _laserDamageEffectRequested = false;
             _nextHitTimeByTarget.Clear();
             ApplyVisualState();
             SetDamageCollider(false);
+            CacheDamageEffectRenderers();
+            ForceStopDamageEffect();
         }
 
         private void OnDisable()
         {
             _nextHitTimeByTarget.Clear();
+            ForceStopDamageEffect();
+        }
+
+        private void Update()
+        {
+            TickDamageEffectStop();
         }
 
         private void OnTriggerEnter2D(Collider2D other)
@@ -92,6 +113,11 @@ namespace BT
             {
                 hitInterval = 0f;
             }
+
+            if (damageEffectLayer < 0)
+            {
+                damageEffectLayer = 0;
+            }
         }
 
         [ContextMenu("Auto Bind Components")]
@@ -123,6 +149,26 @@ namespace BT
                     warningEffect = GetComponentInChildren<SpriteBlink>(true);
                 }
             }
+
+            if (damageEffectAnimator == null)
+            {
+                var animators = GetComponentsInChildren<Animator>(true);
+                for (var i = 0; i < animators.Length; i++)
+                {
+                    var animator = animators[i];
+                    if (animator == null)
+                    {
+                        continue;
+                    }
+
+                    if (string.Equals(animator.gameObject.name, "Fire_Ground", StringComparison.OrdinalIgnoreCase)
+                        || animator.gameObject.name.IndexOf("Fire_Ground", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        damageEffectAnimator = animator;
+                        break;
+                    }
+                }
+            }
         }
 
         public void SetWarningVisible(bool visible)
@@ -143,6 +189,23 @@ namespace BT
             }
         }
 
+        public void SetLaserDamageEffectActive(bool active)
+        {
+            if (_laserDamageEffectRequested == active)
+            {
+                return;
+            }
+
+            _laserDamageEffectRequested = active;
+            if (active)
+            {
+                SetDamageEffectActive(true, restart: true);
+                return;
+            }
+
+            RequestDamageEffectStop();
+        }
+
         private void SetDamageCollider(bool active)
         {
             if (damageCollider == null)
@@ -151,6 +214,184 @@ namespace BT
             }
 
             damageCollider.enabled = active;
+        }
+
+        private void CacheDamageEffectRenderers()
+        {
+            if (damageEffectAnimator == null)
+            {
+                _damageEffectRenderers = Array.Empty<Renderer>();
+                return;
+            }
+
+            _damageEffectRenderers = damageEffectAnimator.GetComponentsInChildren<Renderer>(true);
+        }
+
+        private void SetDamageEffectActive(bool active, bool restart)
+        {
+            if (damageEffectAnimator == null)
+            {
+                return;
+            }
+
+            if (!active)
+            {
+                ForceStopDamageEffect();
+                return;
+            }
+
+            _damageEffectStopRequested = false;
+            _damageEffectStopTargetLoop = 1;
+
+            if (!damageEffectAnimator.gameObject.activeSelf)
+            {
+                damageEffectAnimator.gameObject.SetActive(true);
+            }
+
+            if (!damageEffectAnimator.enabled)
+            {
+                damageEffectAnimator.enabled = true;
+            }
+
+            if (!restart)
+            {
+                return;
+            }
+
+            if (!TryPlayDamageEffectState())
+            {
+                damageEffectAnimator.Rebind();
+                damageEffectAnimator.Update(0f);
+            }
+
+            if (hideDamageEffectWhenIdle)
+            {
+                SetDamageEffectVisible(true);
+            }
+        }
+
+        private void RequestDamageEffectStop()
+        {
+            if (damageEffectAnimator == null)
+            {
+                return;
+            }
+
+            if (!damageEffectAnimator.isActiveAndEnabled || !damageEffectAnimator.gameObject.activeInHierarchy)
+            {
+                ForceStopDamageEffect();
+                return;
+            }
+
+            var layer = Mathf.Clamp(damageEffectLayer, 0, Mathf.Max(0, damageEffectAnimator.layerCount - 1));
+            var info = damageEffectAnimator.GetCurrentAnimatorStateInfo(layer);
+            _damageEffectStopTargetLoop = info.loop ? Mathf.FloorToInt(info.normalizedTime) + 1 : 1;
+            _damageEffectStopRequested = true;
+        }
+
+        private void TickDamageEffectStop()
+        {
+            if (!_damageEffectStopRequested || damageEffectAnimator == null)
+            {
+                return;
+            }
+
+            if (IsDamageEffectFinishedCurrentCycle())
+            {
+                ForceStopDamageEffect();
+            }
+        }
+
+        private bool IsDamageEffectFinishedCurrentCycle()
+        {
+            if (damageEffectAnimator == null)
+            {
+                return true;
+            }
+
+            if (!damageEffectAnimator.isActiveAndEnabled || !damageEffectAnimator.gameObject.activeInHierarchy)
+            {
+                return true;
+            }
+
+            var layer = Mathf.Clamp(damageEffectLayer, 0, Mathf.Max(0, damageEffectAnimator.layerCount - 1));
+            if (damageEffectAnimator.IsInTransition(layer))
+            {
+                return false;
+            }
+
+            var info = damageEffectAnimator.GetCurrentAnimatorStateInfo(layer);
+            if (!string.IsNullOrWhiteSpace(damageEffectStateName) && !info.IsName(damageEffectStateName))
+            {
+                // If another state took over, treat it as finished.
+                return true;
+            }
+
+            if (info.loop)
+            {
+                return info.normalizedTime >= _damageEffectStopTargetLoop;
+            }
+
+            return info.normalizedTime >= 1f;
+        }
+
+        private void ForceStopDamageEffect()
+        {
+            _laserDamageEffectRequested = false;
+            _damageEffectStopRequested = false;
+            _damageEffectStopTargetLoop = 1;
+
+            if (damageEffectAnimator == null)
+            {
+                return;
+            }
+
+            damageEffectAnimator.Rebind();
+            damageEffectAnimator.Update(0f);
+
+            if (hideDamageEffectWhenIdle)
+            {
+                SetDamageEffectVisible(false);
+                damageEffectAnimator.enabled = false;
+            }
+        }
+
+        private void SetDamageEffectVisible(bool visible)
+        {
+            if (_damageEffectRenderers == null || _damageEffectRenderers.Length == 0)
+            {
+                CacheDamageEffectRenderers();
+            }
+
+            for (var i = 0; i < _damageEffectRenderers.Length; i++)
+            {
+                var renderer = _damageEffectRenderers[i];
+                if (renderer == null || renderer == warningRenderer)
+                {
+                    continue;
+                }
+
+                renderer.enabled = visible;
+            }
+        }
+
+        private bool TryPlayDamageEffectState()
+        {
+            if (damageEffectAnimator == null)
+            {
+                return false;
+            }
+
+            var layer = Mathf.Clamp(damageEffectLayer, 0, Mathf.Max(0, damageEffectAnimator.layerCount - 1));
+            if (!string.IsNullOrWhiteSpace(damageEffectStateName)
+                && damageEffectAnimator.HasState(layer, Animator.StringToHash(damageEffectStateName)))
+            {
+                damageEffectAnimator.Play(damageEffectStateName, layer, 0f);
+                damageEffectAnimator.Update(0f);
+                return true;
+            }
+
+            return false;
         }
 
         private void TryApplyDamage(Collider2D other)
