@@ -20,6 +20,7 @@ public class BossAIController : MonoBehaviour
         }
 
         blackboard.TickPhaseTimer(Time.deltaTime);
+        blackboard.TickAnimationSync();
         blackboard.SetPatternExecutionMode(PatternExecutionMode.Normal);
         _root.Tick(blackboard, Time.deltaTime);
     }

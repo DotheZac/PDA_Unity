@@ -10,6 +10,8 @@ namespace BT
         private bool _attacked;
         private float _elapsed;
         private bool _preserveWarningOnReset;
+        private bool _attackAnimRequested;
+        private bool _attackAnimStarted;
         protected bool FailRequested { get; private set; }
 
         protected SkillNode(string name, float warningDuration) : base(name)
@@ -34,6 +36,8 @@ namespace BT
             _attacked = false;
             _elapsed = 0f;
             _preserveWarningOnReset = false;
+            _attackAnimRequested = false;
+            _attackAnimStarted = false;
             FailRequested = false;
             OnReset(preserveWarnings);
         }
@@ -44,6 +48,33 @@ namespace BT
         protected abstract void EndWarningAndAttack(BossBlackboard blackboard);
         protected virtual bool IsAttackFinished(BossBlackboard blackboard, float deltaTime) => true;
         protected virtual void OnReset(bool preserveWarnings) { }
+
+        private void TryStartAttackAnimation(BossBlackboard blackboard)
+        {
+            if (_attackAnimRequested)
+            {
+                return;
+            }
+
+            _attackAnimRequested = true;
+            if (!blackboard.HasAttackAnimationBinding(Name))
+            {
+                _attackAnimStarted = false;
+                return;
+            }
+
+            _attackAnimStarted = blackboard.TryPlayAttackAnimation(Name);
+        }
+
+        private bool IsAttackAnimationBlocking(BossBlackboard blackboard)
+        {
+            if (!_attackAnimRequested || !_attackAnimStarted)
+            {
+                return false;
+            }
+
+            return blackboard.IsAttackAnimationRunning(Name);
+        }
 
         private NodeState TickNormal(BossBlackboard blackboard, float deltaTime)
         {
@@ -80,6 +111,7 @@ namespace BT
             {
                 EndWarningAndAttack(blackboard);
                 _attacked = true;
+                TryStartAttackAnimation(blackboard);
 
                 if (FailRequested)
                 {
@@ -89,6 +121,11 @@ namespace BT
             }
 
             if (!IsAttackFinished(blackboard, deltaTime))
+            {
+                return NodeState.Running;
+            }
+
+            if (IsAttackAnimationBlocking(blackboard))
             {
                 return NodeState.Running;
             }
@@ -148,9 +185,15 @@ namespace BT
             {
                 EndWarningAndAttack(blackboard);
                 _attacked = true;
+                TryStartAttackAnimation(blackboard);
             }
 
             if (!IsAttackFinished(blackboard, deltaTime))
+            {
+                return NodeState.Running;
+            }
+
+            if (IsAttackAnimationBlocking(blackboard))
             {
                 return NodeState.Running;
             }
@@ -163,7 +206,7 @@ namespace BT
     public sealed class ArmSmashSkillNode : SkillNode
     {
         private readonly string _rangeKey;
-        private readonly float _moveDuration;
+        private readonly float _defaultMoveDuration;
         private readonly List<TelegraphTile> _activeTiles = new();
 
         private TelegraphTile _movingTile;
@@ -176,7 +219,7 @@ namespace BT
             : base(name, warningDuration)
         {
             _rangeKey = rangeKey;
-            _moveDuration = attackDuration;
+            _defaultMoveDuration = Mathf.Max(0.01f, attackDuration);
         }
 
         protected override bool InitializeSkill(BossBlackboard blackboard, bool showWarning)
@@ -257,7 +300,8 @@ namespace BT
             }
 
             _moveElapsed += deltaTime;
-            var t = _moveDuration <= Mathf.Epsilon ? 1f : Mathf.Clamp01(_moveElapsed / _moveDuration);
+            var moveDuration = blackboard != null ? blackboard.ArmSmashMoveDuration : _defaultMoveDuration;
+            var t = moveDuration <= Mathf.Epsilon ? 1f : Mathf.Clamp01(_moveElapsed / moveDuration);
             _movingTile.transform.position = Vector3.Lerp(_moveStartPosition, _moveTargetPosition, t);
 
             if (t < 1f)
@@ -312,6 +356,7 @@ namespace BT
         private readonly List<TelegraphTile> _activeTiles = new();
         private float _attackElapsed;
         private bool _damageEnabled;
+        private bool _damageWindowCompleted;
 
         public PickSkillNode(string name, string rangeKey, float warningDuration = 0.9f, float attackDuration = 0.95f, float damageStart = 0.5f, float damageEnd = 0.8f)
             : base(name, warningDuration)
@@ -331,24 +376,29 @@ namespace BT
         {
             SkillNodeUtils.SetWarning(_activeTiles, false, Name);
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+            SetPickDamageEffects(false);
             _attackElapsed = 0f;
             _damageEnabled = false;
+            _damageWindowCompleted = false;
         }
 
         protected override bool IsAttackFinished(BossBlackboard blackboard, float deltaTime)
         {
             _attackElapsed += deltaTime;
 
-            if (!_damageEnabled && _attackElapsed >= _damageStart)
+            if (!_damageWindowCompleted && !_damageEnabled && _attackElapsed >= _damageStart)
             {
                 SkillNodeUtils.SetDamage(_activeTiles, true, Name);
+                SetPickDamageEffects(true);
                 _damageEnabled = true;
             }
 
-            if (_damageEnabled && _attackElapsed >= _damageEnd)
+            if (!_damageWindowCompleted && _damageEnabled && _attackElapsed >= _damageEnd)
             {
                 SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+                SetPickDamageEffects(false);
                 _damageEnabled = false;
+                _damageWindowCompleted = true;
             }
 
             return _attackElapsed >= _attackDuration;
@@ -362,9 +412,25 @@ namespace BT
             }
 
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+            SetPickDamageEffects(false);
             _activeTiles.Clear();
             _attackElapsed = 0f;
             _damageEnabled = false;
+            _damageWindowCompleted = false;
+        }
+
+        private void SetPickDamageEffects(bool active)
+        {
+            for (var i = 0; i < _activeTiles.Count; i++)
+            {
+                var tile = _activeTiles[i];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                tile.SetPickDamageEffectActive(active);
+            }
         }
     }
 
@@ -374,6 +440,9 @@ namespace BT
         private readonly float _stepInterval;
         private readonly List<TelegraphTile> _activeTiles = new();
         private readonly List<int> _activeIndices = new();
+        private bool _phase1TvLaserActivated;
+        private bool _phase1TvLaserFireTriggered;
+        private BossBlackboard _ownerBlackboard;
 
         private int _step;
         private int _centerIndex;
@@ -392,6 +461,8 @@ namespace BT
 
         protected override bool InitializeSkill(BossBlackboard blackboard, bool showWarning)
         {
+            _ownerBlackboard = blackboard;
+
             if (!SkillNodeUtils.PopulateTiles(blackboard, Name, _rangeKey, _activeTiles, showWarning))
             {
                 return false;
@@ -425,6 +496,19 @@ namespace BT
             }
 
             _centerIndex = (_minIndex + _maxIndex) / 2;
+
+            // Phase 1 laser TV effect should start during warning.
+            if (showWarning && blackboard.CurrentPhase == 1 && !_phase1TvLaserActivated)
+            {
+                blackboard.SetTvLaserActive(true);
+                _phase1TvLaserActivated = true;
+            }
+
+            if (showWarning && blackboard.CurrentPhase == 1)
+            {
+                _phase1TvLaserFireTriggered = false;
+            }
+
             return true;
         }
 
@@ -432,10 +516,24 @@ namespace BT
         {
             SkillNodeUtils.SetWarning(_activeTiles, false, Name);
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+            SetLaserDamageEffects(false);
             _step = 0;
             _prevLeft = -1;
             _prevRight = -1;
             _stepElapsed = _stepInterval;
+
+            // Fallback for direct attack-only execution without a warning stage.
+            if (blackboard.CurrentPhase == 1 && !_phase1TvLaserActivated)
+            {
+                blackboard.SetTvLaserActive(true);
+                _phase1TvLaserActivated = true;
+            }
+
+            if (blackboard.CurrentPhase == 1)
+            {
+                blackboard.TriggerTvLaserFire();
+                _phase1TvLaserFireTriggered = true;
+            }
         }
 
         protected override bool IsAttackFinished(BossBlackboard blackboard, float deltaTime)
@@ -453,12 +551,14 @@ namespace BT
             if (left >= _minIndex)
             {
                 blackboard.Telegraphs[left].SetDamageActive(true);
+                blackboard.Telegraphs[left].SetLaserDamageEffectActive(true);
                 Debug.Log($"[SkillNode] {Name} activated damage tile: {SkillNodeUtils.DescribeTile(blackboard.Telegraphs[left])}", blackboard);
             }
 
             if (right <= _maxIndex)
             {
                 blackboard.Telegraphs[right].SetDamageActive(true);
+                blackboard.Telegraphs[right].SetLaserDamageEffectActive(true);
                 if (right != left)
                 {
                     Debug.Log($"[SkillNode] {Name} activated damage tile: {SkillNodeUtils.DescribeTile(blackboard.Telegraphs[right])}", blackboard);
@@ -468,11 +568,13 @@ namespace BT
             if (_prevLeft >= _minIndex && _prevLeft <= _maxIndex)
             {
                 blackboard.Telegraphs[_prevLeft].SetDamageActive(false);
+                blackboard.Telegraphs[_prevLeft].SetLaserDamageEffectActive(false);
             }
 
             if (_prevRight >= _minIndex && _prevRight <= _maxIndex)
             {
                 blackboard.Telegraphs[_prevRight].SetDamageActive(false);
+                blackboard.Telegraphs[_prevRight].SetLaserDamageEffectActive(false);
             }
 
             _prevLeft = left;
@@ -490,12 +592,35 @@ namespace BT
             }
 
             SkillNodeUtils.SetDamage(_activeTiles, false, Name);
+            SetLaserDamageEffects(false);
             _activeTiles.Clear();
             _activeIndices.Clear();
             _step = 0;
             _prevLeft = -1;
             _prevRight = -1;
             _stepElapsed = 0f;
+
+            // Keep charging until fire has actually been triggered.
+            if (_phase1TvLaserActivated && !preserveWarnings && _phase1TvLaserFireTriggered)
+            {
+                _ownerBlackboard?.SetTvLaserActive(false);
+                _phase1TvLaserActivated = false;
+                _phase1TvLaserFireTriggered = false;
+            }
+        }
+
+        private void SetLaserDamageEffects(bool active)
+        {
+            for (var i = 0; i < _activeTiles.Count; i++)
+            {
+                var tile = _activeTiles[i];
+                if (tile == null)
+                {
+                    continue;
+                }
+
+                tile.SetLaserDamageEffectActive(active);
+            }
         }
     }
 

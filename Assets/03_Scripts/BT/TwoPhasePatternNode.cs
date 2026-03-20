@@ -62,7 +62,7 @@
             }
 
             blackboard.SetPatternExecutionMode(PatternExecutionMode.Normal);
-            if (blackboard.HasAnyActiveTelegraphState())
+            if (blackboard.HasAnyActiveTelegraphState() || blackboard.HasAnyRunningAttackAnimation())
             {
                 return NodeState.Running;
             }
@@ -84,6 +84,7 @@
             blackboard.SetPatternExecutionMode(PatternExecutionMode.Normal);
             blackboard.ClearAllWarnings();
             blackboard.ClearAllDamage();
+            blackboard.ClearAllAttackAnimations();
         }
     }
 }
